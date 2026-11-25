@@ -1,0 +1,32 @@
+{
+  "name": "arins-study-diary-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/local-server.ts",
+    "build": "node esbuild.config.mjs",
+    "typecheck": "tsc --noEmit",
+    "package": "npm run build && sam package --template-file template.yaml --output-template-file .aws-sam/packaged.yaml --s3-bucket \"$SAM_BUCKET\"",
+    "deploy": "npm run build && sam deploy --template-file template.yaml --stack-name arins-study-diary-api --capabilities CAPABILITY_IAM --resolve-s3 --no-confirm-changeset"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.901.0",
+    "bcryptjs": "^3.0.3",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
+    "jose": "^6.2.18",
+    "mongodb": "^7.9.1",
+    "nodemailer": "^10.6.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.152",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.18.11",
+    "@types/nodemailer": "^8.0.2",
+    "esbuild": "^0.25.11",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}

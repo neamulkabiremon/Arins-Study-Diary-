@@ -1,0 +1,135 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Arin's Study Diary API — Lambda + API Gateway + Bedrock + MongoDB Atlas + SMTP
+
+Parameters:
+  MongoDbUri:
+    Type: String
+    NoEcho: true
+    Description: mongodb+srv://... Atlas URI
+  MongoDbName:
+    Type: String
+    Default: arins_study_diary
+  AppJwtSecret:
+    Type: String
+    NoEcho: true
+  ArinEmail:
+    Type: String
+  ArinPassword:
+    Type: String
+    NoEcho: true
+  EmonEmail:
+    Type: String
+  EmonPassword:
+    Type: String
+    NoEcho: true
+  BedrockModelId:
+    Type: String
+    Default: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+  AllowedOrigin:
+    Type: String
+    Default: "*"
+    Description: Comma-separated origins, or *
+  SmtpHost:
+    Type: String
+    Default: ""
+  SmtpPort:
+    Type: String
+    Default: "587"
+  SmtpUser:
+    Type: String
+    Default: ""
+  SmtpPass:
+    Type: String
+    NoEcho: true
+    Default: ""
+  SmtpFrom:
+    Type: String
+    Default: ""
+  ReminderCronSecret:
+    Type: String
+    NoEcho: true
+    Default: ""
+
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 1024
+    Runtime: nodejs20.x
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        MONGODB_URI: !Ref MongoDbUri
+        MONGODB_DB_NAME: !Ref MongoDbName
+        APP_JWT_SECRET: !Ref AppJwtSecret
+        ARIN_EMAIL: !Ref ArinEmail
+        ARIN_PASSWORD: !Ref ArinPassword
+        EMON_EMAIL: !Ref EmonEmail
+        EMON_PASSWORD: !Ref EmonPassword
+        BEDROCK_MODEL_ID: !Ref BedrockModelId
+        ALLOWED_ORIGIN: !Ref AllowedOrigin
+        SMTP_HOST: !Ref SmtpHost
+        SMTP_PORT: !Ref SmtpPort
+        SMTP_USER: !Ref SmtpUser
+        SMTP_PASS: !Ref SmtpPass
+        SMTP_FROM: !Ref SmtpFrom
+        REMINDER_CRON_SECRET: !Ref ReminderCronSecret
+
+Resources:
+  DiaryApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowHeaders:
+          - Authorization
+          - Content-Type
+          - X-Cron-Secret
+        AllowMethods:
+          - GET
+          - POST
+          - PATCH
+          - OPTIONS
+        MaxAge: 600
+
+  DiaryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handler.handler
+      Description: Arin's Study Diary API router
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource: "*"
+      Events:
+        Proxy:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DiaryApi
+            Path: /{proxy+}
+            Method: ANY
+        Root:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DiaryApi
+            Path: /
+            Method: ANY
+        # Every minute: 15-min-before task reminder emails (Dhaka times)
+        ReminderTick:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 minute)
+            Description: Tick study reminder emails
+            Enabled: true
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${DiaryApi}.execute-api.${AWS::Region}.amazonaws.com"
+  FunctionName:
+    Value: !Ref DiaryFunction

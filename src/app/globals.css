@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ivory: #fff9f2;
+  --color-ivory-deep: #f3ebe3;
+  --color-lavender: #8b6bb5;
+  --color-lavender-soft: #efe6f7;
+  --color-lavender-mid: #c9b6de;
+  --color-lavender-deep: #5c3d82;
+  --color-ink: #2a2435;
+  --color-ink-muted: #6f657c;
+  --color-leaf: #6a8f5a;
+  --color-leaf-soft: #e2edd9;
+  --color-gold: #c9a227;
+  --color-gold-soft: #f8e9bc;
+  --color-card: #ffffff;
+  --color-sidebar: #f3ebf8;
+  --font-display: var(--font-libre), "Libre Baskerville", "Georgia", serif;
+  --font-body: var(--font-source), "Source Sans 3", "Segoe UI", sans-serif;
+}
+
+@layer base {
+  html {
+    color: var(--color-ink);
+    background: var(--color-ivory);
+    font-family: var(--font-body);
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+    min-height: 100svh;
+    overscroll-behavior-y: contain;
+    touch-action: manipulation;
+    background:
+      radial-gradient(ellipse 70% 45% at 100% -5%, rgba(139, 107, 181, 0.14), transparent 55%),
+      radial-gradient(ellipse 55% 40% at 0% 100%, rgba(106, 143, 90, 0.08), transparent 50%),
+      radial-gradient(ellipse 40% 30% at 70% 80%, rgba(248, 233, 188, 0.35), transparent 45%),
+      var(--color-ivory);
+  }
+
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-lavender);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .shadow-soft {
+    box-shadow:
+      0 10px 30px rgba(92, 61, 130, 0.08),
+      0 2px 6px rgba(42, 36, 53, 0.04);
+  }
+
+  .shadow-card {
+    box-shadow:
+      0 6px 20px rgba(92, 61, 130, 0.06),
+      0 1px 3px rgba(42, 36, 53, 0.04);
+  }
+
+  .animate-rise {
+    animation: rise-in 0.55s ease-out both;
+  }
+
+  .animate-rise-delay {
+    animation: rise-in 0.65s ease-out 0.08s both;
+  }
+
+  .animate-rise-delay-2 {
+    animation: rise-in 0.7s ease-out 0.16s both;
+  }
+
+  .animate-page-enter {
+    animation: page-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-menu-pop {
+    animation: menu-pop 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes menu-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .animate-rise-delay,
+  .animate-rise-delay-2,
+  .animate-page-enter,
+  .animate-menu-pop {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,172 @@
+import { differenceInCalendarDays, parseISO } from "date-fns";
+
+export type DayQuote = {
+  text: string;
+  action: string;
+  source: string;
+};
+
+/** Keep in sync with src/lib/messages.ts — 30-day rotating book quotes. */
+export const DAY_QUOTES: DayQuote[] = [
+  {
+    text: "It is only with the heart that one can see rightly; what is essential is invisible to the eye.",
+    action: "Name one reason your hardest subject matters to the life you want.",
+    source: "The Little Prince — Antoine de Saint-Exupéry",
+  },
+  {
+    text: "You have power over your mind — not outside events. Realize this, and you will find strength.",
+    action: "Spend five quiet minutes on the Frog before opening anything else.",
+    source: "Meditations — Marcus Aurelius",
+  },
+  {
+    text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.",
+    action: "Protect one focused block today — phone in another room.",
+    source: "Will Durant on Aristotle — The Story of Philosophy",
+  },
+  {
+    text: "The secret of getting ahead is getting started.",
+    action: "Open the first page of today’s hardest chapter and underline one line.",
+    source: "Mark Twain",
+  },
+  {
+    text: "Whether you think you can, or you think you can’t — you’re right.",
+    action: "Write one sentence that starts with “I can finish…” for today’s Frog.",
+    source: "Henry Ford",
+  },
+  {
+    text: "Do not wait; the time will never be ‘just right.’",
+    action: "Begin before you feel ready — two minutes of real work counts.",
+    source: "Think and Grow Rich — Napoleon Hill",
+  },
+  {
+    text: "If you are working on something exciting that you really care about, you don’t have to be pushed. The vision pulls you.",
+    action: "Reconnect today’s list to your medical / engineering dream in one line.",
+    source: "Steve Jobs",
+  },
+  {
+    text: "A journey of a thousand miles begins with a single step.",
+    action: "Take the tiniest first step on the task you’ve been postponing.",
+    source: "Tao Te Ching — Lao Tzu",
+  },
+  {
+    text: "It always seems impossible until it’s done.",
+    action: "Break the Frog into one question you can finish in ten minutes.",
+    source: "Nelson Mandela",
+  },
+  {
+    text: "Success is the sum of small efforts, repeated day in and day out.",
+    action: "Complete one small task fully — then tick it with pride.",
+    source: "Robert Collier",
+  },
+  {
+    text: "Eat a live frog first thing in the morning, and nothing worse will happen to you the rest of the day.",
+    action: "Touch your Frog task before anything lighter on the list.",
+    source: "Eat That Frog! — Brian Tracy",
+  },
+  {
+    text: "You do not rise to the level of your goals. You fall to the level of your systems.",
+    action: "Set a simple system for tonight: timer on, one subject, no tabs.",
+    source: "Atomic Habits — James Clear",
+  },
+  {
+    text: "Every action you take is a vote for the type of person you wish to become.",
+    action: "Cast one vote today: finish a block you promised yourself.",
+    source: "Atomic Habits — James Clear",
+  },
+  {
+    text: "The person who moves a mountain begins by carrying away small stones.",
+    action: "Carry one small stone — revise three flashcards or one worked example.",
+    source: "Confucius",
+  },
+  {
+    text: "What you get by achieving your goals is not as important as what you become by achieving your goals.",
+    action: "Notice one skill you’re building this week — write it in the margin.",
+    source: "Zig Ziglar",
+  },
+  {
+    text: "Deep work is the ability to focus without distraction on a cognitively demanding task.",
+    action: "Give yourself one distraction-free stretch for the next study block.",
+    source: "Deep Work — Cal Newport",
+  },
+  {
+    text: "Grit is passion and perseverance for long-term goals.",
+    action: "Return to a topic you quit yesterday — five honest minutes only.",
+    source: "Grit — Angela Duckworth",
+  },
+  {
+    text: "Becoming is better than being.",
+    action: "Treat today’s mistakes as practice, not proof. Fix one wrong answer.",
+    source: "Mindset — Carol S. Dweck",
+  },
+  {
+    text: "When we are no longer able to change a situation, we are challenged to change ourselves.",
+    action: "Change one small condition: clearer desk, water bottle, quieter playlist.",
+    source: "Man’s Search for Meaning — Viktor E. Frankl",
+  },
+  {
+    text: "And, when you want something, all the universe conspires in helping you to achieve it.",
+    action: "Want the next hour clearly — then open the notebook and begin.",
+    source: "The Alchemist — Paulo Coelho",
+  },
+  {
+    text: "I am not afraid of storms, for I am learning how to sail my ship.",
+    action: "Face one stormy chapter bravely — sail through the first section.",
+    source: "Little Women — Louisa May Alcott",
+  },
+  {
+    text: "It is our choices that show what we truly are, far more than our abilities.",
+    action: "Choose the harder useful task for the next twenty-five minutes.",
+    source: "Harry Potter and the Chamber of Secrets — J.K. Rowling",
+  },
+  {
+    text: "There is no substitute for hard work.",
+    action: "Skip the perfect setup. Sit down and work for one honest block.",
+    source: "Thomas A. Edison",
+  },
+  {
+    text: "The future belongs to those who believe in the beauty of their dreams.",
+    action: "Picture one beautiful day after exams — then earn ten minutes toward it.",
+    source: "Eleanor Roosevelt",
+  },
+  {
+    text: "Start where you are. Use what you have. Do what you can.",
+    action: "Use today’s notes as they are — no rewriting the whole world first.",
+    source: "Arthur Ashe",
+  },
+  {
+    text: "Energy and persistence conquer all things.",
+    action: "Persist through one messy problem until the method clicks.",
+    source: "Benjamin Franklin",
+  },
+  {
+    text: "The only way to do great work is to love what you do.",
+    action: "Find one spark of curiosity in today’s subject and follow it for a page.",
+    source: "Steve Jobs",
+  },
+  {
+    text: "Courage doesn’t always roar. Sometimes courage is the quiet voice at the end of the day saying, ‘I will try again tomorrow.’",
+    action: "If yesterday slipped, try again gently — five calm minutes now.",
+    source: "Mary Anne Radmacher",
+  },
+  {
+    text: "Learning never exhausts the mind.",
+    action: "Learn one crisp definition out loud — teach it to an empty chair.",
+    source: "Leonardo da Vinci",
+  },
+  {
+    text: "The expert in anything was once a beginner.",
+    action: "Beginner’s mind: open the book without judging how far you still have to go.",
+    source: "Helen Hayes",
+  },
+];
+
+export function quoteDayIndex(dateStr: string): number {
+  const epoch = parseISO("2024-01-01");
+  const day = parseISO(dateStr);
+  const diff = differenceInCalendarDays(day, epoch);
+  return ((diff % 30) + 30) % 30;
+}
+
+export function quoteForDate(dateStr: string): DayQuote {
+  return DAY_QUOTES[quoteDayIndex(dateStr)]!;
+}
