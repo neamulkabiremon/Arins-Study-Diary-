@@ -290,7 +290,10 @@ export function AccountMenu() {
         onChange={(e) => {
           const file = e.target.files?.[0] ?? null;
           e.target.value = "";
-          if (file?.type.startsWith("image/")) setCropFile(file);
+          if (file?.type.startsWith("image/")) {
+            setOpen(false);
+            setCropFile(file);
+          }
         }}
       />
 

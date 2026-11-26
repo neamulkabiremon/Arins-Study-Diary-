@@ -132,3 +132,42 @@
     animation: none !important;
   }
 }
+
+/* Keep avatar crop zoom slider inside the modal (Safari/iOS overflow) */
+.crop-zoom-range {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  height: 1.5rem;
+  margin: 0;
+  background: transparent;
+}
+.crop-zoom-range::-webkit-slider-runnable-track {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+}
+.crop-zoom-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -0.4rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: #9b7bb8;
+  border: 2px solid #fff;
+}
+.crop-zoom-range::-moz-range-track {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+}
+.crop-zoom-range::-moz-range-thumb {
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #9b7bb8;
+}
