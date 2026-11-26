@@ -6,6 +6,7 @@ export type TaskTag = "HSC" | "Medical" | "Engineering";
 
 export type RewardChoice =
   | "date_with_emon"
+  | "date_with_arin"
   | "chocolate"
   | "outfit"
   | "cash"
@@ -81,6 +82,9 @@ export interface RewardClaimDoc {
 export interface EncouragementDoc {
   _id?: ObjectId;
   authorId: string;
+  /** Stored for quick UI; older rows may omit — list hydrates from users. */
+  authorRole?: UserRole;
+  authorName?: string;
   body: string;
   createdAt: Date;
 }

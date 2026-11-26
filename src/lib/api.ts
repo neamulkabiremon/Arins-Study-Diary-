@@ -205,13 +205,7 @@ export async function apiToggleTask(taskId: string, completed: boolean) {
 }
 
 export async function apiClaimReward(
-  choice:
-    | "date_with_emon"
-    | "chocolate"
-    | "outfit"
-    | "cash"
-    | "makeup"
-    | "personal_gift",
+  choice: RewardChoice,
   amount?: number,
   extras?: {
     note?: string;
@@ -269,7 +263,9 @@ export async function apiCreateNote(body: string) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "Could not save note");
-  return data;
+  return data as {
+    note: EncouragementNote;
+  };
 }
 
 export async function apiListNotes() {
@@ -310,6 +306,28 @@ export async function apiGetWeekProgress() {
     monthProgressPct: number;
     recentClaims: RewardRedemption[];
     claim: RewardClaim | null;
+  };
+}
+
+export async function apiGetPartnerToday() {
+  const res = await fetch(`${apiBase()}/partner/today`, {
+    headers: { ...authHeader() },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Could not load partner");
+  return data as {
+    planDate: string;
+    partner: {
+      id: string;
+      role: "arin" | "emon";
+      displayName: string;
+      email: string;
+      avatarDataUrl?: string | null;
+    };
+    plan: DailyPlan | null;
+    wallet: PointsWallet;
+    dateClaimedThisMonth: boolean;
+    extraDateCost: number;
   };
 }
 

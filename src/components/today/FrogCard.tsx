@@ -37,7 +37,7 @@ export function FrogCard({
   return (
     <section
       aria-labelledby="frog-heading"
-      className="rounded-[1.35rem] border border-lavender-mid/35 bg-gradient-to-br from-[#efe6f8] via-lavender-soft to-[#e2d4f0] p-5 shadow-soft sm:p-6"
+      className="rounded-[1.5rem] border border-lavender-mid/30 bg-gradient-to-br from-[#efe6f8] via-lavender-soft to-[#e2d4f0] p-5 shadow-soft sm:p-7"
     >
       <div className="mb-4 flex items-center gap-2.5">
         <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/70 shadow-card">
@@ -52,7 +52,7 @@ export function FrogCard({
       </div>
       <p
         className={[
-          "font-display text-xl leading-snug text-ink sm:text-2xl",
+          "font-display text-2xl leading-snug text-ink sm:text-[1.7rem]",
           task.completed ? "line-through opacity-65" : "",
         ].join(" ")}
       >

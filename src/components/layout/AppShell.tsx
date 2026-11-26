@@ -55,8 +55,11 @@ export function AppShell({
             {demoBanner}
           </div>
         ) : null}
-        <header className="sticky top-0 z-40 border-b border-lavender-soft/50 bg-ivory/80 px-4 py-2.5 backdrop-blur-md sm:px-7">
-          <div className="mx-auto flex max-w-6xl items-center justify-end gap-2">
+        <header className="sticky top-0 z-40 border-b border-lavender-soft/40 bg-[#faf7f3]/85 px-4 py-2.5 backdrop-blur-md sm:px-7">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
+            <p className="font-display text-base text-lavender-deep lg:invisible lg:text-lg">
+              Study Diary
+            </p>
             <AccountMenu />
           </div>
         </header>

@@ -1,5 +1,5 @@
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
-import { requireRole } from "../auth.js";
+import { requireUser } from "../auth.js";
 import { json, parseJsonBody } from "../http.js";
 import { awards, plans } from "../mongo.js";
 import { computeScore } from "../scoring.js";
@@ -9,7 +9,7 @@ export async function handleToggleTask(
   event: APIGatewayProxyEventV2,
   taskId: string,
 ) {
-  const user = await requireRole(event, "arin");
+  const user = await requireUser(event);
   const parsed = toggleTaskSchema.parse(parseJsonBody(event));
   const col = await plans();
 

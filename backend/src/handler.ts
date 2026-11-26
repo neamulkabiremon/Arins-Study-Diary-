@@ -19,6 +19,7 @@ import {
 import { handleGetPhoto } from "./routes/photos.js";
 import {
   handleGetEmonDashboard,
+  handleGetPartnerToday,
   handleGetWeekProgress,
 } from "./routes/progress.js";
 import { handleClaimReward, handleFulfillReward } from "./routes/rewards.js";
@@ -85,6 +86,9 @@ async function route(event: APIGatewayProxyEventV2) {
   if (method === "GET" && path === "/emon/dashboard") {
     return handleGetEmonDashboard(event);
   }
+  if (method === "GET" && path === "/partner/today") {
+    return handleGetPartnerToday(event);
+  }
   if (method === "GET" && path === "/encouragement") {
     return handleListNotes(event);
   }
@@ -142,9 +146,19 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         ? (err as { statusCode: number }).statusCode
         : 500;
     const message = err instanceof Error ? err.message : "Server error";
+    const mongoHint =
+      /mongodb|timed out|ECONNREFUSED|Server selection/i.test(message)
+        ? " MongoDB Atlas Network Access must allow 0.0.0.0/0 for Lambda."
+        : "";
+    console.error("[api]", message);
     return json(
       statusCode,
-      { error: statusCode === 500 ? "Server error" : message },
+      {
+        error:
+          statusCode === 500
+            ? `Server error.${mongoHint}`
+            : `${message}${mongoHint}`,
+      },
       isHttpApiEvent(event) ? event : undefined,
     );
   }

@@ -176,12 +176,23 @@ export function createDemoWeekly(now = new Date()): WeeklyRewardProgress {
 }
 
 export function createDemoNotes(): EncouragementNote[] {
+  const now = Date.now();
   return [
     {
       id: "demo-note-1",
-      body: "Proud of you for showing up today. One Frog at a time — I’ve got the tea ready when you finish.",
-      createdAt: new Date().toISOString(),
+      body: "Proud of you for showing up today. One Frog at a time — I've got the tea ready when you finish.",
+      createdAt: new Date(now - 3600_000).toISOString(),
       createdBy: "emon",
+      authorRole: "emon",
+      authorName: "Emon",
+    },
+    {
+      id: "demo-note-2",
+      body: "Thank you 🤍 Studying my Frog now. Love you.",
+      createdAt: new Date(now - 1800_000).toISOString(),
+      createdBy: "arin",
+      authorRole: "arin",
+      authorName: "Arin Mahi",
     },
   ];
 }

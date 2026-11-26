@@ -1,14 +1,18 @@
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
-import { requireRole, requireUser } from "../auth.js";
+import { requireUser } from "../auth.js";
 import { dhakaDateString, monthStartDay, weekStartMonday } from "../dates.js";
 import { json } from "../http.js";
-import { awards, claims, notes } from "../mongo.js";
-import { EXTRA_DATE_COST, monthKeyFromDate } from "../reward-rules.js";
+import { awards, claims, notes, plans, users } from "../mongo.js";
+import {
+  EXTRA_DATE_COST,
+  isDateChoice,
+  monthKeyFromDate,
+} from "../reward-rules.js";
 import { getMonthEarned, getWallet } from "../wallet.js";
 
-/** Wallet + weekly stars + date progress for Rewards page. */
+/** Wallet + weekly stars + date progress for Rewards page (own account). */
 export async function handleGetWeekProgress(event: APIGatewayProxyEventV2) {
-  const user = await requireRole(event, "arin");
+  const user = await requireUser(event);
   const today = dhakaDateString();
   const weekStart = weekStartMonday(today);
   const monthKey = monthKeyFromDate(today);
@@ -39,9 +43,11 @@ export async function handleGetWeekProgress(event: APIGatewayProxyEventV2) {
   const wallet = await getWallet(user.id);
   const monthEarned = await getMonthEarned(user.id, monthStart, today);
 
+  const dateChoice =
+    user.role === "emon" ? "date_with_arin" : "date_with_emon";
   const dateClaim = await claimCol.findOne({
     ownerId: user.id,
-    choice: "date_with_emon",
+    choice: dateChoice,
     monthKey,
   });
   const dateClaimedThisMonth = Boolean(dateClaim);
@@ -62,9 +68,9 @@ export async function handleGetWeekProgress(event: APIGatewayProxyEventV2) {
       starCount,
       unlocked: wallet.balance >= 150,
       unlockedSoft: wallet.balance >= 150,
-      unlockedMid: wallet.balance >= 250,
-      unlockedHigh: wallet.balance >= 800,
-      claimed: false, // multiple claims allowed from points bank
+      unlockedMid: wallet.balance >= 1000,
+      unlockedHigh: wallet.balance >= 2000,
+      claimed: false,
       claimedChoice: claim?.choice ?? null,
       fulfilled: claim?.fulfilled ?? false,
       fullPlanDaysThisMonth: 0,
@@ -103,6 +109,70 @@ export async function handleGetWeekProgress(event: APIGatewayProxyEventV2) {
   );
 }
 
+/** Partner's today plan + points (read-only sync for the duo). */
+export async function handleGetPartnerToday(event: APIGatewayProxyEventV2) {
+  const user = await requireUser(event);
+  const partnerRole = user.role === "arin" ? "emon" : "arin";
+  const userCol = await users();
+  const partner = await userCol.findOne({ role: partnerRole });
+  if (!partner) {
+    return json(404, { error: "Partner account not found" }, event);
+  }
+  const partnerId = String(partner._id);
+  const { dhakaDateString } = await import("../dates.js");
+  const planDate = dhakaDateString();
+  const plan = await (await plans()).findOne({
+    ownerId: partnerId,
+    planDate,
+    confirmed: true,
+  });
+  const wallet = await getWallet(partnerId);
+  const monthKey = monthKeyFromDate(planDate);
+  const dateChoice =
+    partnerRole === "emon" ? "date_with_arin" : "date_with_emon";
+  const dateClaim = await (await claims()).findOne({
+    ownerId: partnerId,
+    choice: dateChoice,
+    monthKey,
+  });
+
+  return json(
+    200,
+    {
+      planDate,
+      partner: {
+        id: partnerId,
+        role: partnerRole,
+        displayName:
+          partner.displayName ||
+          (partnerRole === "arin" ? "Arin Mahi" : "Emon"),
+        email: partner.email,
+        avatarDataUrl: partner.avatarDataUrl ?? null,
+      },
+      plan: plan
+        ? {
+            id: String(plan._id),
+            planDate: plan.planDate,
+            photoPath: plan.photoFileId ?? null,
+            confirmed: plan.confirmed,
+            tasks: (plan.tasks ?? []).map((t) => ({
+              ...t,
+              completedAt: t.completedAt
+                ? t.completedAt instanceof Date
+                  ? t.completedAt.toISOString()
+                  : t.completedAt
+                : null,
+            })),
+          }
+        : null,
+      wallet,
+      dateClaimedThisMonth: Boolean(dateClaim),
+      extraDateCost: EXTRA_DATE_COST,
+    },
+    event,
+  );
+}
+
 export async function handleGetEmonDashboard(event: APIGatewayProxyEventV2) {
   await requireUser(event);
   const claimCol = await claims();
@@ -132,6 +202,7 @@ export async function handleGetEmonDashboard(event: APIGatewayProxyEventV2) {
         claimedAt: c.claimedAt.toISOString(),
         fulfilled: c.fulfilled,
         fulfilledAt: c.fulfilledAt ? c.fulfilledAt.toISOString() : null,
+        isDate: isDateChoice(c.choice as "date_with_emon" | "date_with_arin"),
       })),
       notes: recentNotes.map((n) => ({
         id: String(n._id),

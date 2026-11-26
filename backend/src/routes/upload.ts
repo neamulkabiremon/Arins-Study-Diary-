@@ -1,7 +1,7 @@
 import { Readable } from "stream";
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
 import { z } from "zod";
-import { requireRole } from "../auth.js";
+import { requireUser } from "../auth.js";
 import { dhakaTomorrowString } from "../dates.js";
 import { json, parseJsonBody } from "../http.js";
 import { photoBucket, plans } from "../mongo.js";
@@ -29,7 +29,7 @@ function extFor(mime: string): string {
  * Path shape: notebooks/{planDate}/{ownerId}/{timestamp}.{ext}
  */
 export async function handleUpload(event: APIGatewayProxyEventV2) {
-  const user = await requireRole(event, "arin");
+  const user = await requireUser(event);
   const body = bodySchema.parse(parseJsonBody(event));
   const bytes = Buffer.from(body.data, "base64");
   if (bytes.length > MAX_BYTES) {

@@ -58,6 +58,7 @@ export const toggleTaskSchema = z.object({
 export const claimSchema = z.object({
   choice: z.enum([
     "date_with_emon",
+    "date_with_arin",
     "chocolate",
     "outfit",
     "cash",

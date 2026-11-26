@@ -1,5 +1,6 @@
-import { EmonView } from "@/components/emon/EmonView";
+import { redirect } from "next/navigation";
 
+/** Legacy path — notes & claims live at /notes for both of you. */
 export default function EmonPage() {
-  return <EmonView />;
+  redirect("/notes");
 }

@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AvatarCropModal } from "@/components/layout/AvatarCropModal";
 import { apiMe, apiUpdateAvatar, hasApiBaseUrl } from "@/lib/api";
 import { useDiary } from "@/lib/diary-store";
 import { isDemoMode } from "@/lib/mode";
-import { fileToAvatarDataUrl, setAvatarDataUrl } from "@/lib/profile";
+import { setAvatarDataUrl } from "@/lib/profile";
 import {
   clearSession,
   getSessionUser,
@@ -31,6 +32,7 @@ export function AccountMenu() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [avatar, setAvatar] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -39,7 +41,6 @@ export function AccountMenu() {
     setUser(session);
     setAvatar(session?.avatarDataUrl ?? null);
 
-    // Pull profile (incl. avatar) from server so iPad / phone / Mac stay in sync
     if (!demoMode && hasApiBaseUrl() && getToken()) {
       void apiMe()
         .then(({ user: u }) => {
@@ -91,11 +92,10 @@ export function AccountMenu() {
     (demoMode ? "demo@arins-diary.local" : "Sign in to sync");
   const balance = weekly.wallet.balance;
 
-  async function onPickPhoto(file: File | null) {
-    if (!file || !file.type.startsWith("image/")) return;
+  async function saveCroppedAvatar(dataUrl: string) {
+    setCropFile(null);
     setPhotoBusy(true);
     try {
-      const dataUrl = await fileToAvatarDataUrl(file);
       setAvatar(dataUrl);
       setAvatarDataUrl(dataUrl);
       if (!demoMode && hasApiBaseUrl() && getToken()) {
@@ -288,10 +288,19 @@ export function AccountMenu() {
         accept="image/*"
         className="hidden"
         onChange={(e) => {
-          void onPickPhoto(e.target.files?.[0] ?? null);
+          const file = e.target.files?.[0] ?? null;
           e.target.value = "";
+          if (file?.type.startsWith("image/")) setCropFile(file);
         }}
       />
+
+      {cropFile ? (
+        <AvatarCropModal
+          file={cropFile}
+          onCancel={() => setCropFile(null)}
+          onConfirm={(dataUrl) => void saveCroppedAvatar(dataUrl)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -8,8 +8,14 @@ export const NAV_ITEMS = [
   {
     href: "/tomorrow",
     label: "Plan Tomorrow",
-    short: "Tomorrow",
+    short: "Plan",
     icon: "calendar" as const,
+  },
+  {
+    href: "/together",
+    label: "Together",
+    short: "Us",
+    icon: "heart" as const,
   },
   {
     href: "/rewards",

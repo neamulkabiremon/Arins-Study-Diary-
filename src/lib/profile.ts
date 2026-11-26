@@ -20,19 +20,19 @@ export function setAvatarDataUrl(dataUrl: string | null) {
   window.dispatchEvent(new Event("arin-avatar-changed"));
 }
 
-/** Compress image to a small JPEG data URL for local avatar storage. */
+/** Fallback: scale-only compress (prefer AvatarCropModal for a fitted circle). */
 export async function fileToAvatarDataUrl(file: File): Promise<string> {
   const bitmap = await createImageBitmap(file);
   const max = 320;
-  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
-  const w = Math.max(1, Math.round(bitmap.width * scale));
-  const h = Math.max(1, Math.round(bitmap.height * scale));
+  const side = Math.min(bitmap.width, bitmap.height);
+  const sx = (bitmap.width - side) / 2;
+  const sy = (bitmap.height - side) / 2;
   const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
+  canvas.width = max;
+  canvas.height = max;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not process photo");
-  ctx.drawImage(bitmap, 0, 0, w, h);
+  ctx.drawImage(bitmap, sx, sy, side, side, 0, 0, max, max);
   bitmap.close();
   return canvas.toDataURL("image/jpeg", 0.85);
 }

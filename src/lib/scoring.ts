@@ -37,6 +37,9 @@ export function computeScore(tasks: StudyTask[]): ScoreBreakdown {
     .reduce((sum) => sum + otherTaskPoints, 0);
 
   const total = frogEarned + otherTasksEarned;
+  // Challenge mode: Study Star only when the full day is done (not half).
+  const fullPlan = completedCount === totalCount && totalCount > 0;
+  const studyStar = fullPlan;
 
   return {
     total,
@@ -46,8 +49,8 @@ export function computeScore(tasks: StudyTask[]): ScoreBreakdown {
     otherTasksEarned,
     completedCount,
     totalCount,
-    studyStar: total >= 50,
-    fullPlan: total >= 100,
+    studyStar,
+    fullPlan,
     hasPlan: true,
   };
 }

@@ -2,6 +2,7 @@ export type TaskTag = "HSC" | "Medical" | "Engineering";
 
 export type RewardChoice =
   | "date_with_emon"
+  | "date_with_arin"
   | "chocolate"
   | "outfit"
   | "cash"
@@ -97,6 +98,8 @@ export interface EncouragementNote {
   body: string;
   createdAt: string;
   createdBy: string;
+  authorRole?: UserRole | null;
+  authorName?: string | null;
 }
 
 export interface RewardClaim {

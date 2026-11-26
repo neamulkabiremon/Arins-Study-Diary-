@@ -1,5 +1,5 @@
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
-import { requireRole } from "../auth.js";
+import { requireUser } from "../auth.js";
 import { extractTasksFromImage, toDraftTasks } from "../bedrock/extract.js";
 import { json, parseJsonBody } from "../http.js";
 import { AI_DATA_NOTICE, extractBodySchema } from "../schema.js";
@@ -7,7 +7,7 @@ import { AI_DATA_NOTICE, extractBodySchema } from "../schema.js";
 const MAX_BYTES = 8 * 1024 * 1024;
 
 export async function handleExtract(event: APIGatewayProxyEventV2) {
-  await requireRole(event, "arin");
+  await requireUser(event);
 
   const body = extractBodySchema.parse(parseJsonBody(event));
   const bytes = Buffer.from(body.data, "base64");

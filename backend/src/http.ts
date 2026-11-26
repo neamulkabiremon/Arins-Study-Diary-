@@ -7,18 +7,22 @@ const DEFAULT_ORIGIN = process.env.ALLOWED_ORIGIN ?? "*";
 
 export function corsHeaders(origin?: string | null): Record<string, string> {
   const allowed = DEFAULT_ORIGIN;
-  const requestOrigin = origin ?? "";
-  const value =
-    allowed === "*"
-      ? "*"
-      : allowed.split(",").map((s) => s.trim()).includes(requestOrigin)
-        ? requestOrigin
-        : allowed.split(",")[0]!.trim();
+  const requestOrigin = (origin ?? "").trim();
+  const list = allowed.split(",").map((s) => s.trim()).filter(Boolean);
+  let value = list[0] || "*";
+  if (allowed === "*" || list.includes("*")) {
+    // Echo Vercel/browser origin when wildcard is configured
+    value = requestOrigin || "*";
+  } else if (requestOrigin && list.includes(requestOrigin)) {
+    value = requestOrigin;
+  }
 
   return {
     "Access-Control-Allow-Origin": value,
-    "Access-Control-Allow-Headers": "Authorization,Content-Type",
+    "Access-Control-Allow-Headers":
+      "Authorization,Content-Type,X-Cron-Secret",
     "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS",
+    "Vary": "Origin",
     "Content-Type": "application/json",
   };
 }

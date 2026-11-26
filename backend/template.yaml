@@ -50,6 +50,10 @@ Parameters:
     Type: String
     NoEcho: true
     Default: ""
+  DiaryAppUrl:
+    Type: String
+    Default: "https://arins-study-diary.vercel.app"
+    Description: Public app URL for email deep links
 
 Globals:
   Function:
@@ -75,6 +79,7 @@ Globals:
         SMTP_PASS: !Ref SmtpPass
         SMTP_FROM: !Ref SmtpFrom
         REMINDER_CRON_SECRET: !Ref ReminderCronSecret
+        DIARY_APP_URL: !Ref DiaryAppUrl
 
 Resources:
   DiaryApi:
@@ -82,7 +87,10 @@ Resources:
     Properties:
       CorsConfiguration:
         AllowOrigins:
-          - "*"
+          - "https://arins-study-diary.vercel.app"
+          - "https://arins-study-diary-git-main-neamul-kabir-emons-projects.vercel.app"
+          - "http://localhost:3000"
+          - "http://localhost:3001"
         AllowHeaders:
           - Authorization
           - Content-Type
@@ -92,6 +100,7 @@ Resources:
           - POST
           - PATCH
           - OPTIONS
+        AllowCredentials: false
         MaxAge: 600
 
   DiaryFunction:

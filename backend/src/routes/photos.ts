@@ -1,14 +1,14 @@
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
-import { requireRole } from "../auth.js";
+import { requireUser } from "../auth.js";
 import { json } from "../http.js";
-import { ObjectId, photoBucket } from "../mongo.js";
+import { ObjectId, photoBucket, users } from "../mongo.js";
 
-/** Returns a short-lived base64 data URL for Arin's own photo (private). */
+/** Returns a base64 data URL — owner or partner (invite-only duo). */
 export async function handleGetPhoto(
   event: APIGatewayProxyEventV2,
   fileId: string,
 ) {
-  const user = await requireRole(event, "arin");
+  const user = await requireUser(event);
   let _id: ObjectId;
   try {
     _id = new ObjectId(fileId);
@@ -22,8 +22,13 @@ export async function handleGetPhoto(
   if (!meta) {
     return json(404, { error: "Photo not found" }, event);
   }
-  if (meta.metadata?.ownerId && meta.metadata.ownerId !== user.id) {
-    return json(403, { error: "Forbidden" }, event);
+  const ownerId = meta.metadata?.ownerId as string | undefined;
+  if (ownerId && ownerId !== user.id) {
+    const partnerRole = user.role === "arin" ? "emon" : "arin";
+    const partner = await (await users()).findOne({ role: partnerRole });
+    if (!partner || String(partner._id) !== ownerId) {
+      return json(403, { error: "Forbidden" }, event);
+    }
   }
 
   const chunks: Buffer[] = [];

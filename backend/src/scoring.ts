@@ -12,11 +12,15 @@ export function computeScore(tasks: StudyTaskDoc[]) {
   const otherPool = frog ? (frogIsOnly ? 0 : 50) : 100;
   const otherTaskPoints = others.length > 0 ? otherPool / others.length : 0;
   const frogEarned = frog?.completed ? frogPoints : 0;
-  const otherTasksEarned = others.filter((t) => t.completed).length * otherTaskPoints;
+  const otherTasksEarned =
+    others.filter((t) => t.completed).length * otherTaskPoints;
   const total = frogEarned + otherTasksEarned;
+  const completedCount = tasks.filter((t) => t.completed).length;
+  // Challenge: Study Star only when every task is done
+  const fullPlan = completedCount === totalCount;
   return {
     total,
-    studyStar: total >= 50,
-    fullPlan: total >= 100,
+    studyStar: fullPlan,
+    fullPlan,
   };
 }

@@ -1,10 +1,11 @@
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
-import { requireRole } from "../auth.js";
+import { requireUser } from "../auth.js";
 import { dhakaDateString, weekStartMonday } from "../dates.js";
 import { json, parseJsonBody } from "../http.js";
 import { claims, ObjectId } from "../mongo.js";
 import {
   costForClaim,
+  isDateChoice,
   monthKeyFromDate,
   type RewardChoice,
 } from "../reward-rules.js";
@@ -12,7 +13,7 @@ import { claimSchema, fulfillSchema } from "../schema.js";
 import { getWallet } from "../wallet.js";
 
 export async function handleClaimReward(event: APIGatewayProxyEventV2) {
-  const user = await requireRole(event, "arin");
+  const user = await requireUser(event);
   const body = claimSchema.parse(parseJsonBody(event)) as {
     choice: RewardChoice;
     amount?: number;
@@ -39,7 +40,7 @@ export async function handleClaimReward(event: APIGatewayProxyEventV2) {
     }
   }
 
-  const priced = costForClaim(choice, amount);
+  const priced = costForClaim(choice, amount, user.role);
   if (!priced.ok) {
     return json(400, { error: priced.error }, event);
   }
@@ -57,10 +58,10 @@ export async function handleClaimReward(event: APIGatewayProxyEventV2) {
     );
   }
 
-  if (choice === "date_with_emon") {
+  if (isDateChoice(choice)) {
     const already = await claimCol.findOne({
       ownerId: user.id,
-      choice: "date_with_emon",
+      choice,
       monthKey,
     });
     if (already) {
@@ -68,16 +69,13 @@ export async function handleClaimReward(event: APIGatewayProxyEventV2) {
         403,
         {
           error:
-            "Extra Date with Emon is once per month — already claimed. Keep studying for next month!",
+            "Extra study date is once per month — already claimed. Keep studying for next month!",
         },
         event,
       );
     }
   }
 
-  // One cash/treat claim can still happen multiple times if she has points;
-  // date is monthly-capped above. Soft guard: no duplicate same week+choice flood —
-  // allow multiple different treats; only block duplicate week claim for same choice.
   try {
     const result = await claimCol.insertOne({
       ownerId: user.id,
@@ -146,7 +144,7 @@ export async function handleClaimReward(event: APIGatewayProxyEventV2) {
 }
 
 export async function handleFulfillReward(event: APIGatewayProxyEventV2) {
-  const user = await requireRole(event, "emon");
+  const user = await requireUser(event);
   const { claimId } = fulfillSchema.parse(parseJsonBody(event));
   const claimCol = await claims();
 

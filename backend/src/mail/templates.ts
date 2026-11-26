@@ -441,6 +441,67 @@ Please fulfill when you can (bKash / Rocket).
   return { subject, text, html };
 }
 
+/** Soft love-note email when Arin ↔ Emon sends encouragement. */
+export function encouragementNoteEmail(opts: {
+  fromName: string;
+  toName: string;
+  body: string;
+  diaryUrl?: string;
+}) {
+  const short =
+    opts.body.length > 48 ? `${opts.body.slice(0, 45).trim()}…` : opts.body;
+  const subject = `A note from ${opts.fromName} · “${short}”`;
+  const text = `Hey ${opts.toName},
+
+${opts.fromName} left you a note in your Study Diary:
+
+“${opts.body}”
+
+Open Together → Notes to reply.
+${opts.diaryUrl ? opts.diaryUrl : ""}
+
+— Study Diary · Arin & Emon`;
+
+  const url = opts.diaryUrl || "https://arins-study-diary.vercel.app/together?tab=notes";
+  const html = wrap(
+    `
+    <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:${BRAND.lavender};">
+      For you
+    </p>
+    <h1 style="margin:0 0 10px;font-size:28px;line-height:1.25;color:${BRAND.lavenderDeep};">
+      ${escapeHtml(opts.fromName)} wrote you a note
+    </h1>
+    <p style="margin:0 0 22px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;line-height:1.55;color:${BRAND.muted};">
+      Hey ${escapeHtml(opts.toName)} — a little encouragement, just for you.
+    </p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr>
+        <td style="padding:22px 22px;background:${BRAND.blush};border-radius:20px;border:1px solid ${BRAND.border};">
+          <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:20px;line-height:1.45;font-style:italic;color:${BRAND.ink};">
+            “${escapeHtml(opts.body)}”
+          </p>
+          <p style="margin:14px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;font-weight:600;color:${BRAND.lavender};">
+            — ${escapeHtml(opts.fromName)}
+          </p>
+        </td>
+      </tr>
+    </table>
+    <table role="presentation" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="border-radius:999px;background:${BRAND.lavenderDeep};">
+          <a href="${escapeHtml(url)}" style="display:inline-block;padding:14px 22px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">
+            Reply in Study Diary
+          </a>
+        </td>
+      </tr>
+    </table>
+  `,
+    "Study Diary · Arin & Emon · notes that keep you both going",
+  );
+
+  return { subject, text, html };
+}
+
 function escapeHtml(s: string) {
   return s
     .replace(/&/g, "&amp;")

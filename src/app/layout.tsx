@@ -20,9 +20,9 @@ const body = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: "Arin's Study Diary",
+  title: "Study Diary · Arin & Emon",
   description:
-    "A private, mobile-first study planner for Arin — HSC, medical & engineering prep.",
+    "A private study diary for Arin and Emon — plans, points, notes, and rewards.",
 };
 
 export const viewport: Viewport = {
@@ -30,7 +30,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
-  themeColor: "#fff9f2",
+  themeColor: "#faf7f3",
 };
 
 export default function RootLayout({

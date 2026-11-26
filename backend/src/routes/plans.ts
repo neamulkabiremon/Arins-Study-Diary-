@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
-import { requireRole } from "../auth.js";
+import { requireUser } from "../auth.js";
 import { dhakaTomorrowString } from "../dates.js";
 import { json, parseJsonBody } from "../http.js";
 import { plans } from "../mongo.js";
@@ -8,7 +8,7 @@ import { confirmPlanSchema } from "../schema.js";
 import type { StudyTaskDoc } from "../types.js";
 
 export async function handleConfirmPlan(event: APIGatewayProxyEventV2) {
-  const user = await requireRole(event, "arin");
+  const user = await requireUser(event);
   const parsed = confirmPlanSchema.parse(parseJsonBody(event));
   const planDate = parsed.planDate ?? dhakaTomorrowString();
 
@@ -99,23 +99,43 @@ export async function handleConfirmPlan(event: APIGatewayProxyEventV2) {
         firstFiveMinutes: t.firstFiveMinutes,
       }));
 
-      const emonTo = emonEmail();
-      if (emonTo) {
-        const mail = planConfirmedEmail({ planDate, tasks: taskPayload });
-        await sendMail({ to: emonTo, ...mail });
-      }
-
-      const arinTo = arinEmail();
-      if (arinTo) {
-        const quote = quoteForDate(planDate);
-        const reminderLines = buildReminderSchedule(planDate, tasks);
-        const mail = planArmedEmail({
-          planDate,
-          tasks: taskPayload,
-          reminderLines,
-          quote,
-        });
-        await sendMail({ to: arinTo, ...mail });
+      // Notify the partner; arm reminders for the planner
+      if (user.role === "arin") {
+        const emonTo = emonEmail();
+        if (emonTo) {
+          const mail = planConfirmedEmail({ planDate, tasks: taskPayload });
+          await sendMail({ to: emonTo, ...mail });
+        }
+        const arinTo = arinEmail();
+        if (arinTo) {
+          const quote = quoteForDate(planDate);
+          const reminderLines = buildReminderSchedule(planDate, tasks);
+          const mail = planArmedEmail({
+            planDate,
+            tasks: taskPayload,
+            reminderLines,
+            quote,
+          });
+          await sendMail({ to: arinTo, ...mail });
+        }
+      } else {
+        const arinTo = arinEmail();
+        if (arinTo) {
+          const mail = planConfirmedEmail({ planDate, tasks: taskPayload });
+          await sendMail({ to: arinTo, ...mail });
+        }
+        const emonTo = emonEmail();
+        if (emonTo) {
+          const quote = quoteForDate(planDate);
+          const reminderLines = buildReminderSchedule(planDate, tasks);
+          const mail = planArmedEmail({
+            planDate,
+            tasks: taskPayload,
+            reminderLines,
+            quote,
+          });
+          await sendMail({ to: emonTo, ...mail });
+        }
       }
     } catch (err) {
       console.error("[mail] plan confirm notify failed", err);
@@ -130,7 +150,7 @@ export async function handleConfirmPlan(event: APIGatewayProxyEventV2) {
 }
 
 export async function handleGetToday(event: APIGatewayProxyEventV2) {
-  const user = await requireRole(event, "arin");
+  const user = await requireUser(event);
   const { dhakaDateString } = await import("../dates.js");
   const planDate = dhakaDateString();
   const col = await plans();
@@ -139,13 +159,14 @@ export async function handleGetToday(event: APIGatewayProxyEventV2) {
 }
 
 export async function handleGetTomorrow(event: APIGatewayProxyEventV2) {
-  const user = await requireRole(event, "arin");
+  const user = await requireUser(event);
   const planDate = dhakaTomorrowString();
   const col = await plans();
   // Return draft or confirmed — photo + tasks survive refresh
   const plan = await col.findOne({ ownerId: user.id, planDate });
   return json(200, { plan: plan ? serializePlan(plan) : null, planDate }, event);
 }
+
 
 function serializePlan(plan: {
   _id?: { toString(): string };

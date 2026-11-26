@@ -16,9 +16,11 @@ export function Sidebar() {
         <LavenderSprig className="mt-0.5 h-12 w-7 shrink-0" />
         <div>
           <p className="font-display text-[1.35rem] leading-tight text-lavender-deep">
-            Arin&apos;s Study Diary
+            Study Diary
           </p>
-          <p className="mt-1 text-xs text-ink-muted">Private · for Arin</p>
+          <p className="mt-1 text-xs text-ink-muted">
+            Arin &amp; Emon · private
+          </p>
         </div>
       </div>
 
@@ -43,17 +45,6 @@ export function Sidebar() {
             </Link>
           );
         })}
-        <Link
-          href="/emon"
-          className={[
-            "mt-3 flex items-center gap-3 rounded-full px-4 py-3 text-sm font-semibold transition-all duration-200 active:scale-[0.98]",
-            pathname.startsWith("/emon")
-              ? "bg-lavender text-white shadow-soft"
-              : "text-ink-muted hover:bg-white/70 hover:text-ink",
-          ].join(" ")}
-        >
-          Emon
-        </Link>
       </nav>
 
       <div className="mt-auto px-1 pt-8 opacity-95">

@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { LavenderSprig } from "@/components/illustrations/Lavender";
 import { DayCompleteModal } from "@/components/today/DayCompleteModal";
 import { FrogCard } from "@/components/today/FrogCard";
 import { HandwrittenPlanCard } from "@/components/today/HandwrittenPlanCard";
 import { MotivationalBanner } from "@/components/today/MotivationalBanner";
 import { PlanProgress } from "@/components/today/PlanProgress";
 import { StudyChecklist } from "@/components/today/StudyChecklist";
+import { PartnerNoteCard } from "@/components/notes/PartnerNoteCard";
 import {
   dayCompleteMessage,
   hasSeenDayComplete,
@@ -16,6 +16,7 @@ import {
 } from "@/lib/day-complete";
 import { dhakaGreeting, formatDhakaLong } from "@/lib/dates";
 import { useDiary } from "@/lib/diary-store";
+import { getSessionUser } from "@/lib/session";
 import { sortTasksByStartTime } from "@/lib/task-time";
 
 export function TodayView() {
@@ -28,7 +29,18 @@ export function TodayView() {
     demoMode,
     tick,
     tomorrowDraft,
+    notes,
   } = useDiary();
+  const session = getSessionUser();
+  const role = session?.role ?? "arin";
+  const firstName =
+    session?.displayName?.split(/\s+/)[0] ||
+    (role === "emon" ? "Emon" : "Arin");
+  const partnerNote = notes.find((n) =>
+    n.authorRole
+      ? n.authorRole !== role
+      : n.createdBy !== (session?.id ?? role),
+  );
   const frog = todayPlan?.tasks.find((t) => t.isFrog) ?? null;
   const others = useMemo(
     () =>
@@ -60,62 +72,73 @@ export function TodayView() {
   }
 
   return (
-    <div className="space-y-6">
-      <header className="animate-rise flex items-start justify-between gap-3">
+    <div className="space-y-5 sm:space-y-6">
+      <header className="flex items-end justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold tracking-wide text-lavender lg:hidden">
-            Arin&apos;s Study Diary
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-lavender lg:hidden">
+            Study Diary
           </p>
-          <h1 className="mt-1 font-display text-[2rem] leading-tight text-ink sm:text-4xl">
-            {greeting}, Arin
+          <h1 className="mt-1 font-display text-[1.85rem] leading-tight text-ink sm:text-4xl">
+            {greeting}, {firstName}
           </h1>
-          <p className="mt-1.5 text-sm text-ink-muted" suppressHydrationWarning>
+          <p className="mt-1 text-sm text-ink-muted" suppressHydrationWarning>
             {formatDhakaLong(todayDate)}
+            {todayPlan
+              ? ` · ${todayPlan.tasks.filter((t) => t.completed).length}/${todayPlan.tasks.length} done`
+              : ""}
           </p>
         </div>
-        <LavenderSprig className="h-14 w-8 shrink-0 opacity-90 lg:hidden" />
+        {score.hasPlan ? (
+          <p className="shrink-0 rounded-full bg-lavender-soft/80 px-3 py-1.5 text-xs font-bold text-lavender-deep">
+            {Math.round(score.total)} pts
+          </p>
+        ) : null}
       </header>
 
-      <div className="animate-rise-delay">
-        <MotivationalBanner dateStr={todayDate} />
-      </div>
+      {partnerNote ? (
+        <PartnerNoteCard note={partnerNote} myRole={role} compact />
+      ) : null}
 
-      {todayPlan ? (
-        <p
-          className="animate-rise text-xs font-medium text-lavender"
-          role="status"
-        >
-          Showing today&apos;s plan · {todayPlan.tasks.length} tasks
-          {confirmedTomorrow
-            ? ` · also saved for ${formatDhakaLong(confirmedTomorrow.planDate)}`
-            : ""}
-        </p>
-      ) : (
-        <p className="animate-rise rounded-xl border border-lavender-soft bg-card px-4 py-3 text-sm text-ink-muted">
-          No plan for today yet.{" "}
+      {!todayPlan ? (
+        <div className="rounded-2xl bg-lavender-soft/40 px-5 py-8 text-center">
+          <p className="font-display text-xl text-lavender-deep">
+            No plan for today yet
+          </p>
+          <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
+            Plan tomorrow ({formatDhakaLong(tomorrowDate)}) — after you confirm,
+            your Frog and checklist show up here.
+          </p>
           <Link
             href="/tomorrow"
-            className="font-semibold text-lavender-deep underline"
+            className="mt-5 inline-flex rounded-2xl bg-lavender px-5 py-3 text-sm font-bold text-white shadow-soft transition hover:bg-lavender-deep"
           >
             Plan tomorrow
-          </Link>{" "}
-          ({formatDhakaLong(tomorrowDate)}) — after you confirm, Frog + checklist
-          + notebook photo appear here.
-        </p>
+          </Link>
+        </div>
+      ) : (
+        <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-start lg:gap-7">
+          <div className="space-y-4">
+            <FrogCard task={frog} onSetCompleted={setTaskCompleted} />
+            <StudyChecklist tasks={others} onSetCompleted={setTaskCompleted} />
+          </div>
+          <div className="space-y-4">
+            <PlanProgress score={score} />
+            <HandwrittenPlanCard
+              photoUrl={todayPlan?.photoUrl}
+              demo={demoMode}
+            />
+            {confirmedTomorrow ? (
+              <p className="text-xs text-ink-muted">
+                Also saved for {formatDhakaLong(confirmedTomorrow.planDate)}.
+              </p>
+            ) : null}
+          </div>
+        </div>
       )}
 
-      <div className="animate-rise-delay-2 grid gap-5 lg:grid-cols-2 lg:items-start lg:gap-6">
-        <div className="space-y-5">
-          <FrogCard task={frog} onSetCompleted={setTaskCompleted} />
-          <StudyChecklist tasks={others} onSetCompleted={setTaskCompleted} />
-        </div>
-        <div className="space-y-5">
-          <HandwrittenPlanCard
-            photoUrl={todayPlan?.photoUrl}
-            demo={demoMode}
-          />
-          <PlanProgress score={score} />
-        </div>
+      {/* Quote lives below the study work — quieter hierarchy */}
+      <div className="pt-2 opacity-90">
+        <MotivationalBanner dateStr={todayDate} />
       </div>
 
       <DayCompleteModal

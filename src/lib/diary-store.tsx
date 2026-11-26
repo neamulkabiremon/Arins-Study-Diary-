@@ -44,6 +44,7 @@ import type {
   RewardClaim,
   ScoreBreakdown,
   StudyTask,
+  UserRole,
   WeeklyRewardProgress,
 } from "@/lib/types";
 
@@ -152,7 +153,15 @@ interface DiaryContextValue {
   confirmTomorrowPlan: () => void;
   claimReward: (choice: RewardChoice, amount?: number) => void;
   refreshRewards: () => Promise<void>;
-  addNote: (body: string) => void;
+  addNote: (
+    body: string,
+    meta?: {
+      id?: string;
+      authorRole?: UserRole | null;
+      authorName?: string | null;
+      createdBy?: string;
+    },
+  ) => void;
   fulfillClaim: (id: string) => void;
   carryForwardUnfinished: () => void;
   resetDemo: () => void;
@@ -497,8 +506,8 @@ export function DiaryProvider({
                 wallet: res.wallet!,
                 unlocked: res.wallet!.balance >= 150,
                 unlockedSoft: res.wallet!.balance >= 150,
-                unlockedMid: res.wallet!.balance >= 250,
-                unlockedHigh: res.wallet!.balance >= 800,
+                unlockedMid: res.wallet!.balance >= 1000,
+                unlockedHigh: res.wallet!.balance >= 2000,
               }));
             }
             const week = await apiGetWeekProgress();
@@ -623,25 +632,25 @@ export function DiaryProvider({
         const spend =
           choice === "cash"
             ? amount ?? 0
-            : choice === "date_with_emon"
+            : choice === "date_with_emon" || choice === "date_with_arin"
               ? w.extraDateCost
               : choice === "chocolate"
                 ? 150
                 : choice === "makeup"
-                  ? 250
+                  ? 1000
                   : choice === "outfit"
-                    ? 800
+                    ? 2000
                     : 1000;
         const balance = Math.max(0, w.wallet.balance - spend);
+        const isDate =
+          choice === "date_with_emon" || choice === "date_with_arin";
         return {
           ...w,
           claimedChoice: choice,
-          dateClaimedThisMonth:
-            choice === "date_with_emon" ? true : w.dateClaimedThisMonth,
-          dateEligible:
-            choice === "date_with_emon"
-              ? false
-              : !w.dateClaimedThisMonth && balance >= w.extraDateCost,
+          dateClaimedThisMonth: isDate ? true : w.dateClaimedThisMonth,
+          dateEligible: isDate
+            ? false
+            : !w.dateClaimedThisMonth && balance >= w.extraDateCost,
           wallet: {
             earned: w.wallet.earned,
             spent: w.wallet.spent + spend,
@@ -664,17 +673,30 @@ export function DiaryProvider({
     [todayDate],
   );
 
-  const addNote = useCallback((body: string) => {
-    setNotes((n) => [
-      {
-        id: `note-${Date.now()}`,
-        body,
-        createdAt: new Date().toISOString(),
-        createdBy: "emon",
+  const addNote = useCallback(
+    (
+      body: string,
+      meta?: {
+        id?: string;
+        authorRole?: UserRole | null;
+        authorName?: string | null;
+        createdBy?: string;
       },
-      ...n,
-    ]);
-  }, []);
+    ) => {
+      setNotes((n) => [
+        {
+          id: meta?.id ?? `note-${Date.now()}`,
+          body,
+          createdAt: new Date().toISOString(),
+          createdBy: meta?.createdBy ?? meta?.authorRole ?? "emon",
+          authorRole: meta?.authorRole ?? null,
+          authorName: meta?.authorName ?? null,
+        },
+        ...n.filter((x) => x.id !== meta?.id),
+      ]);
+    },
+    [],
+  );
 
   const fulfillClaim = useCallback((id: string) => {
     setClaims((c) =>

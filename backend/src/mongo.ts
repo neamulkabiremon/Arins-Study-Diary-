@@ -23,7 +23,11 @@ export async function getDb(): Promise<Db> {
   if (db) return db;
   const uri = getMongoUri();
   const name = process.env.MONGODB_DB_NAME || "arins_study_diary";
-  client = new MongoClient(uri);
+  client = new MongoClient(uri, {
+    // Fail fast in Lambda instead of hanging until API Gateway 30s timeout
+    serverSelectionTimeoutMS: 8_000,
+    connectTimeoutMS: 8_000,
+  });
   await client.connect();
   db = client.db(name);
   await ensureIndexes(db);

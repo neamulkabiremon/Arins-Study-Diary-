@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ivory: #fff9f2;
-  --color-ivory-deep: #f3ebe3;
+  --color-ivory: #faf7f3;
+  --color-ivory-deep: #f0ebe4;
   --color-lavender: #8b6bb5;
   --color-lavender-soft: #efe6f7;
   --color-lavender-mid: #c9b6de;
@@ -82,7 +82,7 @@
   }
 
   .animate-page-enter {
-    animation: page-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: page-enter 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .animate-menu-pop {
@@ -104,13 +104,11 @@
 @keyframes page-enter {
   from {
     opacity: 0;
-    transform: translateY(14px) scale(0.985);
-    filter: blur(2px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
+    transform: translateY(0);
   }
 }
 

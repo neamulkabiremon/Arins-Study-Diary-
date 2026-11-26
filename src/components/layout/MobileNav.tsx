@@ -22,10 +22,10 @@ export function MobileNav() {
             <li key={item.href} className="flex-1">
               <Link
                 href={item.href}
-                className={[
-                  "flex flex-col items-center gap-1 px-2 py-3 text-[11px] font-semibold transition-all duration-200 active:scale-95",
-                  active ? "text-lavender" : "text-ink-muted",
-                ].join(" ")}
+                  className={[
+                    "flex flex-col items-center gap-1 px-2 py-3 text-[11px] font-semibold transition-all duration-200 active:scale-95",
+                    active ? "text-lavender" : "text-ink-muted",
+                  ].join(" ")}
                 aria-current={active ? "page" : undefined}
               >
                 <span

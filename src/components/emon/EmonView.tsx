@@ -6,7 +6,8 @@ import { apiCreateNote, apiFulfillReward, hasApiBaseUrl } from "@/lib/api";
 import { useDiary } from "@/lib/diary-store";
 
 const CHOICE_LABELS: Record<string, string> = {
-  date_with_emon: "Date with Emon",
+  date_with_emon: "Extra date with Emon",
+  date_with_arin: "Date with Arin",
   chocolate: "Chocolate",
   outfit: "Outfit",
   cash: "Cash",
@@ -50,10 +51,14 @@ export function EmonView() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <header>
-        <h1 className="font-display text-3xl text-ink">Emon&apos;s corner</h1>
+        <h1 className="font-display text-3xl text-ink">Notes &amp; claims</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          Write encouragement, see reward claims, and mark them fulfilled. Arin&apos;s
-          tasks and notebook photos stay private.
+          Leave encouragement and mark reward claims fulfilled. For live task
+          lists and points, open{" "}
+          <a href="/together" className="font-semibold text-lavender-deep underline">
+            Together
+          </a>
+          .
         </p>
       </header>
 

@@ -16,39 +16,32 @@ export function StudyChecklist({
 
   if (ordered.length === 0) {
     return (
-      <section
-        aria-labelledby="checklist-heading"
-        className="rounded-[1.35rem] border border-lavender-soft bg-card p-5 shadow-card"
-      >
-        <h2 id="checklist-heading" className="font-display text-lg text-ink">
-          Study checklist
+      <section aria-labelledby="checklist-heading" className="pt-1">
+        <h2
+          id="checklist-heading"
+          className="font-display text-lg text-ink"
+        >
+          Checklist
         </h2>
         <p className="mt-2 text-sm text-ink-muted">
-          No other checklist items yet. Confirm tomorrow&apos;s plan and it will
-          fill this list when that day starts.
+          No other items yet — confirm tomorrow&apos;s plan and they appear when
+          that day starts.
         </p>
       </section>
     );
   }
 
   return (
-    <section
-      aria-labelledby="checklist-heading"
-      className="rounded-[1.35rem] border border-lavender-soft bg-card p-5 shadow-card"
-    >
-      <h2
-        id="checklist-heading"
-        className="mb-1 font-display text-lg text-ink"
-      >
-        Study checklist
-      </h2>
-      <p className="mb-4 text-xs text-ink-muted">Ordered by start time</p>
-      <ul className="space-y-1">
+    <section aria-labelledby="checklist-heading">
+      <div className="mb-3 flex items-baseline justify-between gap-2">
+        <h2 id="checklist-heading" className="font-display text-lg text-ink">
+          Checklist
+        </h2>
+        <p className="text-xs text-ink-muted">By start time</p>
+      </div>
+      <ul className="divide-y divide-lavender-soft/80 border-y border-lavender-soft/80">
         {ordered.map((task) => (
-          <li
-            key={task.id}
-            className="rounded-xl px-2 py-3 transition-colors hover:bg-lavender-soft/40"
-          >
+          <li key={task.id} className="py-3.5 first:pt-3 last:pb-3">
             <Checkbox
               id={`task-${task.id}`}
               checked={task.completed}

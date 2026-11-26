@@ -42,9 +42,7 @@ function LoginForm() {
       const next = search.get("next");
       const safeNext =
         next && next.startsWith("/") && !next.startsWith("//") ? next : null;
-      router.push(
-        safeNext ?? (user.role === "emon" ? "/emon" : "/today"),
-      );
+      router.push(safeNext ?? "/today");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sign in");
     } finally {
@@ -54,15 +52,15 @@ function LoginForm() {
 
   return (
     <div className="mx-auto flex min-h-[70dvh] max-w-md flex-col justify-center px-2">
-      <div className="animate-rise rounded-[1.5rem] border border-lavender-soft bg-card/80 p-6 shadow-soft backdrop-blur-sm sm:p-8">
+      <div className="rounded-[1.5rem] border border-lavender-soft/80 bg-card/90 p-6 shadow-soft backdrop-blur-sm sm:p-8">
         <div className="flex items-center gap-2">
           <LavenderSprig className="h-12 w-7" />
           <h1 className="font-display text-3xl text-lavender-deep">
-            Arin&apos;s Study Diary
+            Study Diary
           </h1>
         </div>
         <p className="mt-3 text-sm leading-relaxed text-ink-muted">
-          Invite-only sign-in. Only Arin and Emon accounts can open this diary.
+          Private for Arin &amp; Emon — invite-only sign-in.
         </p>
 
         {demo ? (
