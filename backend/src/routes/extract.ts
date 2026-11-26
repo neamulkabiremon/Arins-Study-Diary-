@@ -14,15 +14,12 @@ export async function handleExtract(event: APIGatewayProxyEventV2) {
   if (bytes.length > MAX_BYTES) {
     return json(400, { error: "File too large (max 8 MB).", notice: AI_DATA_NOTICE }, event);
   }
-  if (
-    body.mimeType === "image/heic" ||
-    body.mimeType === "image/heif"
-  ) {
+  if (body.mimeType === "image/heic" || body.mimeType === "image/heif") {
     return json(
       400,
       {
         error:
-          "HEIC is not supported by Bedrock vision. Please convert to JPG or PNG, or use manual entry.",
+          "This photo is still HEIC. The app should convert it automatically — try Replace photo → Photo Library again, or save as JPG in Photos.",
         notice: AI_DATA_NOTICE,
       },
       event,

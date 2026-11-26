@@ -39,7 +39,7 @@ export type ExtractResponse = z.infer<typeof extractResponseSchema>;
  * - Notebook photo bytes (JPG/PNG/WebP, max 8 MB) + extraction instructions
  * - Not sent: account identity, other days' plans, or reward history
  * Real photos must never be written to demo fixtures or application logs.
- * HEIC is rejected by the Lambda API — convert to JPG/PNG or enter manually.
+ * HEIC/HEIF is converted to high-quality JPEG in the browser before upload.
  */
 export const AI_DATA_NOTICE = `
 Sent to Bedrock: notebook photo bytes + extraction instructions only.

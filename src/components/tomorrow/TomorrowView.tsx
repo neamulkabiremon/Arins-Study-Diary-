@@ -15,6 +15,7 @@ import {
 import { cropNotebookFocus } from "@/lib/crop-notebook";
 import { formatDhakaLong } from "@/lib/dates";
 import { useDiary } from "@/lib/diary-store";
+import { normalizeImageForAi } from "@/lib/normalize-image";
 import { isLoggedIn } from "@/lib/session";
 import type { ExtractedTaskDraft } from "@/lib/types";
 
@@ -165,7 +166,7 @@ export function TomorrowView() {
   async function onFile(f: File, _preview: string) {
     setJustConfirmed(false);
     setUploadProgress(8);
-    setStatus("Framing notebook…");
+    setStatus("Preparing photo…");
     setExtractError(null);
     setDraftTasks([]);
     setPhotoPath(null);
@@ -173,11 +174,30 @@ export function TomorrowView() {
     let working = f;
     let previewUrl = _preview;
     try {
-      const cropped = await cropNotebookFocus(f);
-      working = cropped.file;
-      previewUrl = cropped.previewUrl;
-    } catch {
-      // Use original if crop fails (e.g. HEIC)
+      // HEIC/HEIF → high-quality JPEG before crop / Bedrock
+      working = await normalizeImageForAi(f);
+      if (working !== f) {
+        URL.revokeObjectURL(_preview);
+        previewUrl = URL.createObjectURL(working);
+      }
+      setUploadProgress(12);
+      setStatus("Framing notebook…");
+      try {
+        const cropped = await cropNotebookFocus(working);
+        working = cropped.file;
+        previewUrl = cropped.previewUrl;
+      } catch {
+        // Keep normalized JPEG if crop fails
+      }
+    } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Could not convert this photo. Try JPG or PNG.";
+      setExtractError(msg);
+      setUploadProgress(null);
+      setStatus(null);
+      return;
     }
 
     setFile(working);

@@ -87,7 +87,9 @@ export async function apiUpdateAvatar(avatarDataUrl: string | null) {
 }
 
 export async function apiExtract(file: File) {
-  const payload = await fileToBase64Payload(file);
+  const { normalizeImageForAi } = await import("@/lib/normalize-image");
+  const safe = await normalizeImageForAi(file);
+  const payload = await fileToBase64Payload(safe);
   const res = await fetch(`${apiBase()}/extract`, {
     method: "POST",
     headers: {
@@ -107,7 +109,9 @@ export async function apiExtract(file: File) {
 }
 
 export async function apiUpload(file: File, planDate?: string) {
-  const payload = await fileToBase64Payload(file);
+  const { normalizeImageForAi } = await import("@/lib/normalize-image");
+  const safe = await normalizeImageForAi(file);
+  const payload = await fileToBase64Payload(safe);
   const res = await fetch(`${apiBase()}/upload`, {
     method: "POST",
     headers: {
