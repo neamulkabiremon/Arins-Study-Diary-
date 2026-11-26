@@ -43,8 +43,7 @@ export async function extractTasksFromImage(params: {
   mimeType: string;
 }): Promise<{ result: ExtractResponse; provider: "bedrock"; modelId: string }> {
   const modelId =
-    process.env.BEDROCK_MODEL_ID ??
-    "us.anthropic.claude-sonnet-4-5-20250929-v1:0";
+    process.env.BEDROCK_MODEL_ID ?? "us.anthropic.claude-sonnet-4-6";
 
   const client = new BedrockRuntimeClient({});
   const base64 = params.bytes.toString("base64");

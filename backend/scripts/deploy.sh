@@ -36,7 +36,7 @@ done < "$ENV_FILE"
 
 REGION="${AWS_REGION:-us-east-1}"
 STACK="${STACK_NAME:-arins-study-diary-api}"
-MODEL="${BEDROCK_MODEL_ID:-us.anthropic.claude-sonnet-4-5-20250929-v1:0}"
+MODEL="${BEDROCK_MODEL_ID:-us.anthropic.claude-sonnet-4-6}"
 # * until Vercel URL is known; redeploy with real origin later if desired
 ORIGIN="${ALLOWED_ORIGIN_DEPLOY:-*}"
 DB_NAME="${MONGODB_DB_NAME:-arins_study_diary}"

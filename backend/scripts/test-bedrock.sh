@@ -3,7 +3,7 @@
 set -euo pipefail
 
 REGION="${AWS_REGION:-us-east-1}"
-MODEL="${BEDROCK_MODEL_ID:-us.anthropic.claude-sonnet-4-5-20250929-v1:0}"
+MODEL="${BEDROCK_MODEL_ID:-us.anthropic.claude-sonnet-4-6}"
 
 echo "Testing Bedrock InvokeModel in $REGION model=$MODEL ..."
 aws bedrock-runtime invoke-model \
