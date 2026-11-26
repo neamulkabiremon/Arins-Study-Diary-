@@ -60,6 +60,21 @@ async function withPhotoUrl(plan: DailyPlan | null): Promise<DailyPlan | null> {
   }
 }
 
+/** Today mirror often lacks photoPath — reuse tomorrow's linked notebook. */
+function withFallbackPhoto(
+  today: DailyPlan | null,
+  tomorrow: DailyPlan | null,
+): DailyPlan | null {
+  if (!today) return null;
+  if (today.photoUrl || today.photoPath) return today;
+  if (!tomorrow?.photoUrl && !tomorrow?.photoPath) return today;
+  return {
+    ...today,
+    photoPath: tomorrow.photoPath ?? today.photoPath,
+    photoUrl: tomorrow.photoUrl ?? today.photoUrl,
+  };
+}
+
 function planTasksToDrafts(plan: DailyPlan): ExtractedTaskDraft[] {
   return plan.tasks.map((t) => ({
     clientId: t.id,
@@ -248,13 +263,17 @@ export function DiaryProvider({
           apiListNotes(),
         ]);
         if (cancelled) return;
-        const today = await withPhotoUrl(todayRes.plan);
         const tomorrow = await withPhotoUrl(tomorrowRes.plan);
+        const today = withFallbackPhoto(
+          await withPhotoUrl(todayRes.plan),
+          tomorrow,
+        );
         if (cancelled) return;
         setTodayPlan(today);
         // Banner / “plan ready” only for confirmed plans
         setConfirmedTomorrow(tomorrow?.confirmed ? tomorrow : null);
         if (tomorrow?.photoUrl) setPhotoPreviewUrl(tomorrow.photoUrl);
+        else if (today?.photoUrl) setPhotoPreviewUrl(today.photoUrl);
         // Restore editable checklist + photo from Mongo after refresh
         if (tomorrow && tomorrow.tasks.length > 0) {
           setDraftTasks(planTasksToDrafts(tomorrow));
@@ -349,9 +368,14 @@ export function DiaryProvider({
         ]);
         if (cancelled) return;
         const tomorrow = await withPhotoUrl(tomorrowRes.plan);
-        setTodayPlan(await withPhotoUrl(todayRes.plan));
+        const today = withFallbackPhoto(
+          await withPhotoUrl(todayRes.plan),
+          tomorrow,
+        );
+        setTodayPlan(today);
         setConfirmedTomorrow(tomorrow?.confirmed ? tomorrow : null);
         if (tomorrow?.photoUrl) setPhotoPreviewUrl(tomorrow.photoUrl);
+        else if (today?.photoUrl) setPhotoPreviewUrl(today.photoUrl);
         if (tomorrow && tomorrow.tasks.length > 0) {
           setDraftTasks(planTasksToDrafts(tomorrow));
         }
@@ -448,9 +472,14 @@ export function DiaryProvider({
         apiGetWeekProgress(),
       ]);
       const tomorrow = await withPhotoUrl(tomorrowRes.plan);
-      setTodayPlan(await withPhotoUrl(todayRes.plan));
+      const today = withFallbackPhoto(
+        await withPhotoUrl(todayRes.plan),
+        tomorrow,
+      );
+      setTodayPlan(today);
       setConfirmedTomorrow(tomorrow?.confirmed ? tomorrow : null);
       if (tomorrow?.photoUrl) setPhotoPreviewUrl(tomorrow.photoUrl);
+      else if (today?.photoUrl) setPhotoPreviewUrl(today.photoUrl);
       if (tomorrow && tomorrow.tasks.length > 0) {
         setDraftTasks(planTasksToDrafts(tomorrow));
       }
@@ -592,10 +621,17 @@ export function DiaryProvider({
             }
           })
           .catch(() => undefined);
-        void apiGetTodayPlan()
-          .then((r) => withPhotoUrl(r.plan))
-          .then((p) => {
-            if (p) setTodayPlan(p);
+        void Promise.all([apiGetTodayPlan(), apiGetTomorrowPlan()])
+          .then(async ([todayRes, tomorrowRes]) => {
+            const tomorrow = await withPhotoUrl(tomorrowRes.plan);
+            const today = withFallbackPhoto(
+              await withPhotoUrl(todayRes.plan),
+              tomorrow,
+            );
+            if (today) setTodayPlan(today);
+            if (tomorrow?.confirmed) setConfirmedTomorrow(tomorrow);
+            if (tomorrow?.photoUrl) setPhotoPreviewUrl(tomorrow.photoUrl);
+            else if (today?.photoUrl) setPhotoPreviewUrl(today.photoUrl);
           })
           .catch(() => undefined);
       }

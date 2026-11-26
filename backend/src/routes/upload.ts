@@ -60,26 +60,32 @@ export async function handleUpload(event: APIGatewayProxyEventV2) {
 
   const fileId = String(uploadStream.id);
 
-  // Link photo to that day's plan doc so refresh can reload it (draft or confirmed)
+  // Link photo to that day's plan doc so refresh can reload it (draft or confirmed).
+  // Also attach to Dhaka "today" when uploading for tomorrow — Plan mirrors onto Today.
   const col = await plans();
   const now = new Date();
-  await col.updateOne(
-    { ownerId: user.id, planDate },
-    {
-      $set: {
-        ownerId: user.id,
-        planDate,
-        photoFileId: fileId,
-        updatedAt: now,
+  const { dhakaDateString } = await import("../dates.js");
+  const today = dhakaDateString();
+  const dates = Array.from(new Set([planDate, today]));
+  for (const d of dates) {
+    await col.updateOne(
+      { ownerId: user.id, planDate: d },
+      {
+        $set: {
+          ownerId: user.id,
+          planDate: d,
+          photoFileId: fileId,
+          updatedAt: now,
+        },
+        $setOnInsert: {
+          confirmed: false,
+          tasks: [],
+          createdAt: now,
+        },
       },
-      $setOnInsert: {
-        confirmed: false,
-        tasks: [],
-        createdAt: now,
-      },
-    },
-    { upsert: true },
-  );
+      { upsert: true },
+    );
+  }
 
   return json(
     200,

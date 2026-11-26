@@ -28,9 +28,12 @@ export function TodayView() {
     setTaskCompleted,
     demoMode,
     tick,
-    tomorrowDraft,
     notes,
+    tomorrowDraft,
   } = useDiary();
+  const confirmedTomorrow = tomorrowDraft.confirmedPlan;
+  const notebookPhoto =
+    todayPlan?.photoUrl ?? confirmedTomorrow?.photoUrl ?? null;
   const session = getSessionUser();
   const role = session?.role ?? "arin";
   const firstName =
@@ -49,7 +52,6 @@ export function TodayView() {
   );
   const [greeting, setGreeting] = useState("Hello");
   const [celebrate, setCelebrate] = useState(false);
-  const confirmedTomorrow = tomorrowDraft.confirmedPlan;
   const allDone =
     Boolean(todayPlan?.tasks.length) &&
     todayPlan!.tasks.every((t) => t.completed);
@@ -124,7 +126,7 @@ export function TodayView() {
           <div className="space-y-4">
             <PlanProgress score={score} />
             <HandwrittenPlanCard
-              photoUrl={todayPlan?.photoUrl}
+              photoUrl={notebookPhoto}
               demo={demoMode}
             />
             {confirmedTomorrow ? (
