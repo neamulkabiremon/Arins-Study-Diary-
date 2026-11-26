@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { PhotoUploader } from "@/components/tomorrow/PhotoUploader";
 import { TaskDraftEditor } from "@/components/tomorrow/TaskDraftEditor";
@@ -69,6 +69,40 @@ function applyIncoming(
   );
 }
 
+async function dataUrlToFile(dataUrl: string, name = "notebook.jpg"): Promise<File> {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  const type =
+    blob.type ||
+    (dataUrl.startsWith("data:image/png") ? "image/png" : "image/jpeg");
+  return new File([blob], name, { type, lastModified: Date.now() });
+}
+
+/** File state is lost on refresh — rebuild from preview or saved photoPath. */
+async function fileFromPreviewOrPath(opts: {
+  file: File | null;
+  previewUrl: string | null;
+  photoPath: string | null;
+  canFetchPath: boolean;
+}): Promise<File | null> {
+  if (opts.file) return opts.file;
+
+  if (opts.previewUrl?.startsWith("data:") || opts.previewUrl?.startsWith("blob:")) {
+    try {
+      return await dataUrlToFile(opts.previewUrl);
+    } catch {
+      /* fall through */
+    }
+  }
+
+  if (opts.canFetchPath && opts.photoPath) {
+    const photo = await apiGetPhoto(opts.photoPath);
+    return dataUrlToFile(photo.dataUrl);
+  }
+
+  return null;
+}
+
 export function TomorrowView() {
   const {
     todayDate,
@@ -84,6 +118,7 @@ export function TomorrowView() {
   } = useDiary();
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const fileRef = useRef<File | null>(null);
   const [photoPath, setPhotoPath] = useState<string | null>(
     tomorrowDraft.confirmedPlan?.photoPath ?? null,
   );
@@ -99,6 +134,10 @@ export function TomorrowView() {
   }, []);
 
   useEffect(() => {
+    fileRef.current = file;
+  }, [file]);
+
+  useEffect(() => {
     if (tomorrowDraft.confirmedPlan) {
       setJustConfirmed(true);
       if (tomorrowDraft.confirmedPlan.photoPath) {
@@ -109,6 +148,11 @@ export function TomorrowView() {
 
   const apiReady = !demoMode && hasApiBaseUrl();
   const useLiveApi = apiReady && signedIn;
+
+  function rememberFile(next: File | null) {
+    fileRef.current = next;
+    setFile(next);
+  }
 
   async function runExtract(sourceFile: File | null, preserveEdits: boolean) {
     setExtractError(null);
@@ -124,12 +168,25 @@ export function TomorrowView() {
           );
           return;
         }
-        if (!sourceFile) {
-          setExtractError("Add a notebook photo first, then retry extraction.");
+
+        let working =
+          sourceFile ??
+          fileRef.current ??
+          (await fileFromPreviewOrPath({
+            file: null,
+            previewUrl: tomorrowDraft.photoPreviewUrl,
+            photoPath,
+            canFetchPath: useLiveApi,
+          }));
+        if (!working) {
+          setExtractError(
+            "Add a notebook photo first, then retry extraction.",
+          );
           return;
         }
+        rememberFile(working);
 
-        const data = await apiExtract(sourceFile);
+        const data = await apiExtract(working);
         applyIncoming(
           data.tasks,
           preserveEdits,
@@ -200,7 +257,7 @@ export function TomorrowView() {
       return;
     }
 
-    setFile(working);
+    rememberFile(working);
     setDraftPhoto(previewUrl);
     setUploadProgress(20);
     setStatus("Reading handwriting…");
@@ -242,7 +299,7 @@ export function TomorrowView() {
   }
 
   function onClear() {
-    setFile(null);
+    rememberFile(null);
     setDraftPhoto(null);
     setPhotoPath(null);
     setUploadProgress(null);
@@ -350,7 +407,7 @@ export function TomorrowView() {
         confirmed={showSuccess}
         onFile={(f, preview) => void onFile(f, preview)}
         onClear={onClear}
-        onRetryExtract={() => void runExtract(file, false)}
+        onRetryExtract={() => void runExtract(fileRef.current ?? file, false)}
       />
 
       {tomorrowDraft.extractError ? (
