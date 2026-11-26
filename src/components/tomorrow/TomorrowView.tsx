@@ -169,7 +169,7 @@ export function TomorrowView() {
           return;
         }
 
-        let working =
+        const working =
           sourceFile ??
           fileRef.current ??
           (await fileFromPreviewOrPath({
