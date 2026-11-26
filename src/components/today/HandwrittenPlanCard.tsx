@@ -33,7 +33,7 @@ export function HandwrittenPlanCard({
         <img
           src={photoUrl}
           alt="Handwritten plan"
-          className="w-full object-contain bg-ivory"
+          className="mx-auto max-h-[32rem] w-full object-contain bg-ivory"
         />
       </div>
       <Button

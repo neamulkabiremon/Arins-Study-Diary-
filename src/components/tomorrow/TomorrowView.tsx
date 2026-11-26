@@ -238,7 +238,7 @@ export function TomorrowView() {
         previewUrl = URL.createObjectURL(working);
       }
       setUploadProgress(12);
-      setStatus("Framing notebook…");
+      setStatus("Finding notebook page…");
       try {
         const cropped = await cropNotebookFocus(working);
         working = cropped.file;
