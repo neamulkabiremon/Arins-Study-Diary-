@@ -1,16 +1,33 @@
 import { z } from "zod";
 
-export const taskTagSchema = z.enum(["HSC", "Medical", "Engineering"]);
+export const taskTagSchema = z.enum([
+  "HSC",
+  "Medical",
+  "Engineering",
+  "Work",
+  "Gym",
+  "Language",
+  "Reading",
+  "Personal",
+]);
+
+const ALLOWED_TAGS = new Set([
+  "HSC",
+  "Medical",
+  "Engineering",
+  "Work",
+  "Gym",
+  "Language",
+  "Reading",
+  "Personal",
+]);
 
 const looseTags = z
   .array(z.string())
   .optional()
   .default([])
   .transform((tags) =>
-    tags.filter(
-      (t): t is "HSC" | "Medical" | "Engineering" =>
-        t === "HSC" || t === "Medical" || t === "Engineering",
-    ),
+    tags.filter((t): t is z.infer<typeof taskTagSchema> => ALLOWED_TAGS.has(t)),
   );
 
 export const extractedTaskSchema = z.object({
@@ -32,7 +49,16 @@ export type ExtractResponse = z.infer<typeof extractResponseSchema>;
 export interface ExtractedTaskDraft {
   clientId: string;
   title: string;
-  tags: Array<"HSC" | "Medical" | "Engineering">;
+  tags: Array<
+    | "HSC"
+    | "Medical"
+    | "Engineering"
+    | "Work"
+    | "Gym"
+    | "Language"
+    | "Reading"
+    | "Personal"
+  >;
   isFrog: boolean;
   firstFiveMinutes?: string | null;
   uncertain: boolean;

@@ -137,7 +137,16 @@ export async function apiConfirmPlan(body: {
   photoPath?: string | null;
   tasks: Array<{
     title: string;
-    tags: Array<"HSC" | "Medical" | "Engineering">;
+    tags: Array<
+      | "HSC"
+      | "Medical"
+      | "Engineering"
+      | "Work"
+      | "Gym"
+      | "Language"
+      | "Reading"
+      | "Personal"
+    >;
     isFrog: boolean;
     firstFiveMinutes?: string | null;
     uncertain?: boolean;

@@ -2,9 +2,13 @@
 
 import { Button } from "@/components/ui/Button";
 import { Tag } from "@/components/ui/Tag";
-import type { ExtractedTaskDraft, TaskTag } from "@/lib/types";
-
-const ALL_TAGS: TaskTag[] = ["HSC", "Medical", "Engineering"];
+import { getSessionUser } from "@/lib/session";
+import {
+  ARIN_TAGS,
+  EMON_TAGS,
+  type ExtractedTaskDraft,
+  type TaskTag,
+} from "@/lib/types";
 
 export function TaskDraftEditor({
   tasks,
@@ -13,6 +17,10 @@ export function TaskDraftEditor({
   tasks: ExtractedTaskDraft[];
   onChange: (tasks: ExtractedTaskDraft[]) => void;
 }) {
+  const role = getSessionUser()?.role ?? "arin";
+  const palette: TaskTag[] = role === "emon" ? EMON_TAGS : ARIN_TAGS;
+  const defaultTag: TaskTag = role === "emon" ? "Work" : "HSC";
+
   function update(id: string, patch: Partial<ExtractedTaskDraft>) {
     onChange(tasks.map((t) => (t.clientId === id ? { ...t, ...patch } : t)));
   }
@@ -63,8 +71,8 @@ export function TaskDraftEditor({
       ...tasks,
       {
         clientId: `manual-${Date.now()}`,
-        title: "New study task",
-        tags: ["HSC"],
+        title: role === "emon" ? "New task" : "New study task",
+        tags: [defaultTag],
         isFrog: tasks.length === 0,
         firstFiveMinutes: null,
         uncertain: false,
@@ -129,7 +137,7 @@ export function TaskDraftEditor({
                         update(task.clientId, { uncertain: false })
                       }
                     >
-                      ✨ Check handwriting
+                      Check handwriting
                     </button>
                   ) : null}
                   <label
@@ -150,7 +158,7 @@ export function TaskDraftEditor({
                     className="mt-1 w-full rounded-lg border border-lavender-mid/40 bg-white px-3 py-1.5 text-sm"
                   />
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {ALL_TAGS.map((tag) => {
+                    {palette.map((tag) => {
                       const on = task.tags.includes(tag);
                       return (
                         <button

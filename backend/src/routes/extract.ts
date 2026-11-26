@@ -7,7 +7,7 @@ import { AI_DATA_NOTICE, extractBodySchema } from "../schema.js";
 const MAX_BYTES = 8 * 1024 * 1024;
 
 export async function handleExtract(event: APIGatewayProxyEventV2) {
-  await requireUser(event);
+  const user = await requireUser(event);
 
   const body = extractBodySchema.parse(parseJsonBody(event));
   const bytes = Buffer.from(body.data, "base64");
@@ -30,6 +30,7 @@ export async function handleExtract(event: APIGatewayProxyEventV2) {
     const { result, provider, modelId } = await extractTasksFromImage({
       bytes,
       mimeType: body.mimeType,
+      role: user.role,
     });
     return json(
       200,

@@ -2,7 +2,15 @@ import type { ObjectId } from "mongodb";
 
 export type UserRole = "arin" | "emon";
 
-export type TaskTag = "HSC" | "Medical" | "Engineering";
+export type TaskTag =
+  | "HSC"
+  | "Medical"
+  | "Engineering"
+  | "Work"
+  | "Gym"
+  | "Language"
+  | "Reading"
+  | "Personal";
 
 export type RewardChoice =
   | "date_with_emon"

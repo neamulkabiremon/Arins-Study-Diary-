@@ -1,6 +1,15 @@
 import { z } from "zod";
 
-export const taskTagSchema = z.enum(["HSC", "Medical", "Engineering"]);
+export const taskTagSchema = z.enum([
+  "HSC",
+  "Medical",
+  "Engineering",
+  "Work",
+  "Gym",
+  "Language",
+  "Reading",
+  "Personal",
+]);
 
 export const extractedTaskSchema = z.object({
   title: z
