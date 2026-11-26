@@ -2,18 +2,29 @@ import { z } from "zod";
 
 export const taskTagSchema = z.enum(["HSC", "Medical", "Engineering"]);
 
+const looseTags = z
+  .array(z.string())
+  .optional()
+  .default([])
+  .transform((tags) =>
+    tags.filter(
+      (t): t is "HSC" | "Medical" | "Engineering" =>
+        t === "HSC" || t === "Medical" || t === "Engineering",
+    ),
+  );
+
 export const extractedTaskSchema = z.object({
-  title: z.string().min(1).max(200),
-  tags: z.array(taskTagSchema).default([]),
-  isFrogCandidate: z.boolean().default(false),
-  firstFiveMinutes: z.string().max(200).nullable().optional(),
-  uncertain: z.boolean().default(false),
-  confidence: z.number().min(0).max(1).optional(),
+  title: z.string().min(1).max(300),
+  tags: looseTags,
+  isFrogCandidate: z.boolean().optional().default(false),
+  firstFiveMinutes: z.string().max(300).nullable().optional(),
+  uncertain: z.boolean().optional().default(false),
+  confidence: z.number().min(0).max(1).optional().catch(undefined),
 });
 
 export const extractResponseSchema = z.object({
-  tasks: z.array(extractedTaskSchema).max(30),
-  notes: z.string().max(500).optional(),
+  tasks: z.array(extractedTaskSchema).max(40),
+  notes: z.string().max(800).optional(),
 });
 
 export type ExtractResponse = z.infer<typeof extractResponseSchema>;

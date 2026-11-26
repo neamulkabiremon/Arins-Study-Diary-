@@ -138,7 +138,14 @@ export async function normalizeImageForAi(file: File): Promise<File> {
     mime === "image/png" ||
     mime === "image/webp";
 
-  if (alreadyOk && !heic && file.size <= MAX_BYTES) {
+  // Always re-encode camera/HEIC-ish photos to a clean JPEG Bedrock accepts.
+  // Tiny already-safe JPEGs under 1.5MB can pass through.
+  if (
+    alreadyOk &&
+    !heic &&
+    file.size <= 1.5 * 1024 * 1024 &&
+    (mime === "image/jpeg" || mime === "image/jpg" || mime === "image/png")
+  ) {
     return file;
   }
 

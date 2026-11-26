@@ -42,11 +42,19 @@ export async function handleExtract(event: APIGatewayProxyEventV2) {
       },
       event,
     );
-  } catch {
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("[extract] failed", detail);
+    const friendly =
+      /image|media|heic|decode|format/i.test(detail)
+        ? "Could not read this photo. Try Replace photo and pick JPG from the library, or enter tasks manually."
+        : /json|parse|zod|schema/i.test(detail)
+          ? "AI returned a messy draft. Retry extraction, or enter tasks manually."
+          : "Extraction failed. You can enter tasks manually.";
     return json(
       500,
       {
-        error: "Extraction failed. You can enter tasks manually.",
+        error: friendly,
         notice: AI_DATA_NOTICE,
       },
       event,

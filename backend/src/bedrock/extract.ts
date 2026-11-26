@@ -8,23 +8,29 @@ import {
   type ExtractResponse,
 } from "../schema.js";
 
-const SYSTEM_PROMPT = `You extract study tasks from a handwritten notebook photo for a Bangladeshi HSC student preparing for medical and engineering admission exams.
+const SYSTEM_PROMPT = `You extract an editable daily checklist from a handwritten notebook / planner photo.
+
+Works for:
+- HSC / medical / engineering study plans
+- Work days, gym, language practice, reading, chores, routines
 
 Rules:
 - Return ONLY valid JSON matching the schema. No markdown fences.
 - Support English, Bangla, or mixed handwriting.
-- Preserve concrete details: chapter numbers, question counts, subject names, time blocks.
-- If the page is a daily routine / timetable, turn each study block into one task (e.g. "Biology 9:30–11:30"). Skip wake-up / sleep / meals.
+- Preserve times and concrete details in the title (e.g. "11:30–5:00 Office work", "7:00–9:00 Gym", "10:00–11:00 Practice French").
+- If the page is a daily timetable / routine, turn each meaningful block into one task. Include work, gym, study, language, reading.
+- Skip pure wake-up / sleep / generic "meals" lines unless they are a real timed block the person wrote as a priority.
+- Prefer Top Priorities / numbered goals when present.
 - Crossed-out titles are not tasks unless rewritten elsewhere.
 - If text is unclear, set uncertain=true and keep your best guess in title (do not invent whole tasks).
-- Suggest tags from: HSC, Medical, Engineering (multiple allowed). Biology/Chemistry → often Medical+HSC; Math/Physics → often Engineering+HSC.
-- Mark at most one task as isFrogCandidate (the hardest / most important study block).
+- tags: ONLY use values from this set when they clearly fit: "HSC", "Medical", "Engineering". Otherwise use [].
+- Mark at most one task as isFrogCandidate (hardest / most important block of the day).
 - Optional firstFiveMinutes: a tiny practical first step when obvious.
-- Do not include rewards, personal notes, or non-study items.`;
+- Ignore decorative quotes and water/checkbox trackers unless they are real tasks.`;
 
-const USER_TEXT = `Read this notebook photo and extract an editable study checklist as JSON:
-{"tasks":[{"title":"...","tags":["HSC"],"isFrogCandidate":false,"firstFiveMinutes":null,"uncertain":false,"confidence":0.0}],"notes":"..."}
-Include every distinct study subject/block you can read.`;
+const USER_TEXT = `Read this notebook photo and extract an editable checklist as JSON:
+{"tasks":[{"title":"...","tags":[],"isFrogCandidate":false,"firstFiveMinutes":null,"uncertain":false,"confidence":0.0}],"notes":"..."}
+Include every distinct timed block and priority you can read (work, study, gym, language, reading, etc.).`;
 function mediaTypeFor(mime: string): "image/jpeg" | "image/png" | "image/webp" | "image/gif" {
   if (mime === "image/png") return "image/png";
   if (mime === "image/webp") return "image/webp";
