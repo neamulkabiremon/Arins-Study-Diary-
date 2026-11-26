@@ -1,6 +1,6 @@
 /**
- * Crops desk photos toward the notebook page (usually right/center)
- * so dashboard + Plan tomorrow previews match the mock framing.
+ * Prepares notebook photos for preview + Bedrock.
+ * Keeps nearly the full page (gentle margin trim) — no aggressive desk crop.
  */
 
 export async function cropNotebookFocus(file: File): Promise<{
@@ -10,51 +10,36 @@ export async function cropNotebookFocus(file: File): Promise<{
   const bitmap = await loadImage(file);
   const { width: w, height: h } = bitmap;
 
-  // Portrait / already notebook-ish → mild center crop
-  // Wide desk shots → favor the right notebook column
-  const isWide = w / h > 0.95;
-  const sx = isWide ? w * 0.4 : w * 0.08;
-  const sy = isWide ? h * 0.06 : h * 0.05;
-  const sw = isWide ? w * 0.58 : w * 0.84;
-  const sh = isWide ? h * 0.88 : h * 0.9;
+  // Soft edge trim only (~3%) so the whole planner page stays visible
+  const trim = 0.03;
+  const sx = w * trim;
+  const sy = h * trim;
+  const sw = w * (1 - trim * 2);
+  const sh = h * (1 - trim * 2);
 
-  const outW = 900;
-  const outH = Math.round(outW * 1.25); // ~4:5 like mock card
+  // Cap long edge for upload size; keep aspect ratio of the page
+  const maxEdge = 1600;
+  const scale = Math.min(1, maxEdge / Math.max(sw, sh));
+  const outW = Math.max(1, Math.round(sw * scale));
+  const outH = Math.max(1, Math.round(sh * scale));
 
   const canvas = document.createElement("canvas");
   canvas.width = outW;
   canvas.height = outH;
   const ctx = canvas.getContext("2d");
   if (!ctx) {
+    if ("close" in bitmap) bitmap.close();
     const previewUrl = URL.createObjectURL(file);
     return { file, previewUrl };
   }
 
   ctx.fillStyle = "#fff9f2";
   ctx.fillRect(0, 0, outW, outH);
-
-  // Cover-fit the crop rect into 4:5
-  const srcAspect = sw / sh;
-  const dstAspect = outW / outH;
-  let dw = outW;
-  let dh = outH;
-  let dx = 0;
-  let dy = 0;
-  if (srcAspect > dstAspect) {
-    dh = outH;
-    dw = outH * srcAspect;
-    dx = (outW - dw) / 2;
-  } else {
-    dw = outW;
-    dh = outW / srcAspect;
-    dy = (outH - dh) / 2;
-  }
-
-  ctx.drawImage(bitmap, sx, sy, sw, sh, dx, dy, dw, dh);
+  ctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, outW, outH);
   if ("close" in bitmap) bitmap.close();
 
   const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/jpeg", 0.9),
+    canvas.toBlob(resolve, "image/jpeg", 0.92),
   );
   if (!blob) {
     const previewUrl = URL.createObjectURL(file);

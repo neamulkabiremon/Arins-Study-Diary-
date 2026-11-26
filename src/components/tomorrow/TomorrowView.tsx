@@ -16,7 +16,7 @@ import { cropNotebookFocus } from "@/lib/crop-notebook";
 import { formatDhakaLong } from "@/lib/dates";
 import { useDiary } from "@/lib/diary-store";
 import { normalizeImageForAi } from "@/lib/normalize-image";
-import { isLoggedIn } from "@/lib/session";
+import { getSessionUser, isLoggedIn } from "@/lib/session";
 import type { ExtractedTaskDraft } from "@/lib/types";
 
 /** Demo-only fixtures — never used when live AI is on. */
@@ -324,17 +324,17 @@ export function TomorrowView() {
       if (useLiveApi) {
         await apiConfirmPlan({
           planDate: tomorrowDate,
-          photoPath,
+          photoPath: photoPath ?? undefined,
           tasks: taskPayload,
         });
         // Mirror onto today so /today shows Frog + checklist + photo for testing now
         await apiConfirmPlan({
           planDate: todayDate,
-          photoPath,
+          photoPath: photoPath ?? undefined,
           tasks: taskPayload,
         });
       }
-      confirmTomorrowPlan();
+      confirmTomorrowPlan(photoPath);
       setJustConfirmed(true);
       setStatus(null);
     } catch (err) {
@@ -376,7 +376,9 @@ export function TomorrowView() {
           role="status"
         >
           <p className="font-display text-2xl text-lavender-deep">
-            Great work, Arin
+            Great work,{" "}
+            {getSessionUser()?.displayName?.split(/\s+/)[0] ||
+              (getSessionUser()?.role === "emon" ? "Emon" : "Arin")}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-ink">
             Your tomorrow plan is confirmed for{" "}

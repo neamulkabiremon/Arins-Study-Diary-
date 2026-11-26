@@ -32,8 +32,8 @@ export function HandwrittenPlanCard({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={photoUrl}
-          alt="Arin's handwritten study plan"
-          className="aspect-[4/5] w-full object-cover object-[center_18%]"
+          alt="Handwritten plan"
+          className="w-full object-contain bg-ivory"
         />
       </div>
       <Button

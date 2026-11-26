@@ -59,13 +59,18 @@ export async function handleConfirmPlan(event: APIGatewayProxyEventV2) {
   });
 
   const now = new Date();
+  // Keep the GridFS photo from /upload when confirm omits photoPath
+  const nextPhotoId =
+    parsed.photoPath !== undefined && parsed.photoPath !== null
+      ? parsed.photoPath
+      : (existing?.photoFileId ?? null);
   await col.updateOne(
     { ownerId: user.id, planDate },
     {
       $set: {
         ownerId: user.id,
         planDate,
-        photoFileId: parsed.photoPath ?? null,
+        photoFileId: nextPhotoId,
         confirmed: true,
         tasks,
         updatedAt: now,

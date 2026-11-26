@@ -150,7 +150,7 @@ interface DiaryContextValue {
   setExtracting: (v: boolean) => void;
   setExtractError: (msg: string | null) => void;
   mergeExtractedTasks: (incoming: ExtractedTaskDraft[]) => void;
-  confirmTomorrowPlan: () => void;
+  confirmTomorrowPlan: (photoPath?: string | null) => void;
   claimReward: (choice: RewardChoice, amount?: number) => void;
   refreshRewards: () => Promise<void>;
   addNote: (
@@ -546,55 +546,62 @@ export function DiaryProvider({
     });
   }, []);
 
-  const confirmTomorrowPlan = useCallback(() => {
-    const tasks: StudyTask[] = draftTasks.map((t, i) => ({
-      id: `tomorrow-${t.clientId}`,
-      title: t.title,
-      tags: t.tags,
-      isFrog: t.isFrog,
-      firstFiveMinutes: t.firstFiveMinutes ?? null,
-      completed: false,
-      completedAt: null,
-      uncertain: t.uncertain,
-      sortOrder: i,
-    }));
-    // Ensure exactly one frog if any tasks
-    if (tasks.length > 0 && !tasks.some((t) => t.isFrog)) {
-      tasks[0]!.isFrog = true;
-    }
-    const plan: DailyPlan = {
-      id: `plan-${tomorrowDate}`,
-      planDate: tomorrowDate,
-      photoPath: null,
-      photoUrl: photoPreviewUrl,
-      confirmed: true,
-      tasks,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setConfirmedTomorrow(plan);
-    // Also mirror onto Today so dashboard (Frog / checklist / photo) is testable now
-    setTodayPlan({
-      ...plan,
-      id: `plan-${todayDate}`,
-      planDate: todayDate,
-    });
-    // Refresh from API so task IDs match Mongo (needed for toggleTask)
-    if (!demoMode && hasApiBaseUrl() && isLoggedIn()) {
-      void apiGetTomorrowPlan()
-        .then((r) => withPhotoUrl(r.plan))
-        .then((p) => {
-          if (p?.confirmed) setConfirmedTomorrow(p);
-        })
-        .catch(() => undefined);
-      void apiGetTodayPlan()
-        .then((r) => withPhotoUrl(r.plan))
-        .then((p) => {
-          if (p) setTodayPlan(p);
-        })
-        .catch(() => undefined);
-    }
-  }, [draftTasks, photoPreviewUrl, tomorrowDate, todayDate, demoMode]);
+  const confirmTomorrowPlan = useCallback(
+    (photoPath?: string | null) => {
+      const tasks: StudyTask[] = draftTasks.map((t, i) => ({
+        id: `tomorrow-${t.clientId}`,
+        title: t.title,
+        tags: t.tags,
+        isFrog: t.isFrog,
+        firstFiveMinutes: t.firstFiveMinutes ?? null,
+        completed: false,
+        completedAt: null,
+        uncertain: t.uncertain,
+        sortOrder: i,
+      }));
+      // Ensure exactly one frog if any tasks
+      if (tasks.length > 0 && !tasks.some((t) => t.isFrog)) {
+        tasks[0]!.isFrog = true;
+      }
+      const plan: DailyPlan = {
+        id: `plan-${tomorrowDate}`,
+        planDate: tomorrowDate,
+        photoPath: photoPath ?? null,
+        photoUrl: photoPreviewUrl,
+        confirmed: true,
+        tasks,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setConfirmedTomorrow(plan);
+      // Also mirror onto Today so dashboard (Frog / checklist / photo) is testable now
+      setTodayPlan({
+        ...plan,
+        id: `plan-${todayDate}`,
+        planDate: todayDate,
+      });
+      if (photoPreviewUrl) setPhotoPreviewUrl(photoPreviewUrl);
+      // Refresh from API so task IDs match Mongo (needed for toggleTask)
+      if (!demoMode && hasApiBaseUrl() && isLoggedIn()) {
+        void apiGetTomorrowPlan()
+          .then((r) => withPhotoUrl(r.plan))
+          .then((p) => {
+            if (p?.confirmed) {
+              setConfirmedTomorrow(p);
+              if (p.photoUrl) setPhotoPreviewUrl(p.photoUrl);
+            }
+          })
+          .catch(() => undefined);
+        void apiGetTodayPlan()
+          .then((r) => withPhotoUrl(r.plan))
+          .then((p) => {
+            if (p) setTodayPlan(p);
+          })
+          .catch(() => undefined);
+      }
+    },
+    [draftTasks, photoPreviewUrl, tomorrowDate, todayDate, demoMode],
+  );
 
   const refreshRewards = useCallback(async () => {
     if (demoMode || !hasApiBaseUrl() || !isLoggedIn()) return;

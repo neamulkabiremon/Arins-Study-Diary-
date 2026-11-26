@@ -68,7 +68,7 @@ export function PhotoUploader({
           <img
             src={previewUrl}
             alt="Preview of handwritten plan"
-            className="aspect-[4/5] max-h-96 w-full rounded-xl object-cover object-[center_18%] shadow-soft"
+            className="max-h-[28rem] w-full rounded-xl object-contain bg-ivory shadow-soft"
           />
           <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-lavender-deep shadow-card">
             {confirmed
