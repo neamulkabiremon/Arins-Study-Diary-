@@ -119,13 +119,21 @@ export const noteSchema = z.object({
 });
 
 export const extractBodySchema = z.object({
-  mimeType: z.enum([
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/heic",
-    "image/heif",
-  ]),
+  mimeType: z
+    .string()
+    .optional()
+    .transform((v) => {
+      const m = (v || "image/jpeg").toLowerCase().trim();
+      if (m === "image/jpg" || m === "jpg" || m === "jpeg" || m === "") {
+        return "image/jpeg" as const;
+      }
+      if (m === "image/png" || m === "png") return "image/png" as const;
+      if (m === "image/webp" || m === "webp") return "image/webp" as const;
+      if (m === "image/heic" || m === "heic") return "image/heic" as const;
+      if (m === "image/heif" || m === "heif") return "image/heif" as const;
+      // Default: treat unknown image/* as jpeg for Bedrock
+      return "image/jpeg" as const;
+    }),
   /** Base64-encoded image bytes (no data: URL prefix). Max ~8 MB decoded. */
   data: z.string().min(1),
 });

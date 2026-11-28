@@ -12,8 +12,16 @@ export async function cropNotebookFocus(file: File): Promise<{
   const bitmap = await loadImage(file);
   const { width: w, height: h } = bitmap;
 
+  // If the photo is already mostly a page (tight phone crop), keep nearly all of it.
   const detected = detectHandwrittenPage(bitmap, w, h);
-  const rect = detected ?? softFullFrame(w, h);
+  const full = softFullFrame(w, h);
+  let rect = detected ?? full;
+  if (detected) {
+    const areaRatio = (detected.sw * detected.sh) / (w * h);
+    // Avoid over-cropping an already-clean page into a tiny fragment
+    if (areaRatio < 0.22) rect = full;
+    else if (areaRatio > 0.82) rect = full;
+  }
 
   const maxEdge = 1600;
   const scale = Math.min(1, maxEdge / Math.max(rect.sw, rect.sh));

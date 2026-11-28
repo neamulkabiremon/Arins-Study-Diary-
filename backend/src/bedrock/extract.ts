@@ -13,47 +13,57 @@ function systemPromptFor(role: "arin" | "emon"): string {
     return `You extract an editable daily checklist from a professional's handwritten planner photo (office work, gym, language practice, reading, personal routines).
 
 Rules:
-- Return ONLY valid JSON matching the schema. No markdown fences.
+- Return ONLY valid JSON matching the schema. No markdown fences. No extra keys.
 - Support English, Bangla, or mixed handwriting.
-- Preserve times in titles (e.g. "11:30–5:00 Office work", "7:00–9:00 Gym", "10:00–11:00 Practice French").
-- Turn each meaningful timetable block and Top Priority / To Do item into a task.
-- Skip pure wake-up / sleep / meal trackers / quotes / water glasses unless they are a real priority task.
-- tags: ONLY use "Work", "Gym", "Language", "Reading", "Personal". Never use HSC, Medical, or Engineering.
-  Office / infra / work update → Work. Gym → Gym. French/language → Language. Book → Reading. Pack bag / shower / cook / chores → Personal.
-- Mark at most one isFrogCandidate (most important block — usually the main office priority).
-- Optional firstFiveMinutes when obvious.`;
+- Preserve times in titles (e.g. "11:30–5:00 Office work", "7:00–9:00 Gym").
+- Turn each meaningful timetable block into a task.
+- Skip pure wake-up / sleep / meal trackers unless they are a real priority task.
+- tags ONLY: "Work", "Gym", "Language", "Reading", "Personal".
+- Mark at most one isFrogCandidate.
+- Keep notes under 400 characters.`;
   }
 
-  return `You extract an editable daily checklist from a handwritten notebook / routine photo for Arin (HSC medical + engineering track).
+  return `You extract an editable daily checklist from a handwritten notebook / "Routine" photo for Arin.
 
 Rules:
-- Return ONLY valid JSON. No markdown fences. No extra keys beyond the schema.
+- Return ONLY valid JSON. No markdown fences. No extra keys.
 - Support English, Bangla, French, or mixed handwriting.
-- Read the MAIN notepad / routine page in the foreground. Ignore dense formula sheets or printed pages underneath/behind it.
-- Turn each timed routine block into a task. Put times in the title (e.g. "6:30–9:00 Math", "10:00–11:30 Biology").
-- Include study blocks (Math, Physics, Chemistry, Biology, Language practice) AND important day blocks (NID paperwork, appointments) when written as timed plan items.
-- Skip pure wake-up / "getting ready" / sleep / decorative logos unless they are the only content.
-- tags: only "HSC", "Medical", "Engineering", "Language", "Personal" when they fit.
-  Biology/Chemistry → Medical+HSC. Math/Physics → Engineering+HSC. Language practise / French → Language (+ HSC ok). Errands/appointments → Personal.
-- Mark at most one isFrogCandidate (hardest study block, often Math/Physics before exams).
-- Optional firstFiveMinutes when obvious. Keep notes under 400 characters.`;
+- Focus on the main notepad page. Ignore logos (e.g. Ximeclav) and crossed-out headers.
+- Create ONE task per timed line. Put the time range in the title.
+  Examples: "10:00–1:00 NID Paper Work", "6:30–9:00 Math", "10:00–11:30 Biology".
+- Include study AND day blocks (NID, beauty parlor, French conversation, math, language, biology).
+- You may skip only: Wake up, Getting Ready, sleep. Prefer extracting too many over too few.
+- NEVER return {"tasks":[]} if any timed activity is readable.
+- tags only: "HSC", "Medical", "Engineering", "Language", "Personal"
+  Biology/Chemistry → Medical+HSC. Math/Physics → Engineering+HSC. Language/French → Language. Errands → Personal.
+- Mark at most one isFrogCandidate (hardest study block).
+- Keep notes under 400 characters.`;
 }
 
-function userTextFor(role: "arin" | "emon"): string {
+function userTextFor(role: "arin" | "emon", aggressive: boolean): string {
   if (role === "emon") {
-    return `Extract this professional daily planner as JSON:
+    return aggressive
+      ? `Extract EVERY readable timed block as JSON tasks (not an empty list):
+{"tasks":[{"title":"11:30–5:00 Office work","tags":["Work"],"isFrogCandidate":true,"firstFiveMinutes":null,"uncertain":false,"confidence":0.9}],"notes":"..."}
+Tags only Work/Gym/Language/Reading/Personal.`
+      : `Extract this professional daily planner as JSON:
 {"tasks":[{"title":"...","tags":["Work"],"isFrogCandidate":false,"firstFiveMinutes":null,"uncertain":false,"confidence":0.0}],"notes":"..."}
-Use only Work / Gym / Language / Reading / Personal tags. Do not use HSC, Medical, or Engineering.`;
+Use only Work / Gym / Language / Reading / Personal tags.`;
   }
-  return `Extract the handwritten routine on the main notepad as JSON:
+  return aggressive
+    ? `This is a handwritten Routine page. Extract EVERY timed line you can read (NID, Beauty Parlor, French line, Math, Language Practise, Biology, etc). Do NOT return an empty tasks array.
+{"tasks":[{"title":"6:30–9:00 Math","tags":["HSC","Engineering"],"isFrogCandidate":true,"firstFiveMinutes":null,"uncertain":false,"confidence":0.95}],"notes":"short"}
+Tags only: HSC, Medical, Engineering, Language, Personal.`
+    : `Extract the handwritten Routine on the notepad as JSON:
 {"tasks":[{"title":"6:30–9:00 Math","tags":["HSC","Engineering"],"isFrogCandidate":true,"firstFiveMinutes":null,"uncertain":false,"confidence":0.0}],"notes":"..."}
-Include every timed plan line you can read on the foreground notebook. Ignore background worksheets. Tags only from HSC, Medical, Engineering, Language, Personal.`;
+Include every timed plan line. Ignore logos and crossed-out headers. Tags: HSC, Medical, Engineering, Language, Personal.`;
 }
 
 function mediaTypeFor(mime: string): "image/jpeg" | "image/png" | "image/webp" | "image/gif" {
-  if (mime === "image/png") return "image/png";
-  if (mime === "image/webp") return "image/webp";
-  // HEIC is not accepted by Claude vision — callers should convert; treat as jpeg if somehow passed
+  const m = (mime || "").toLowerCase();
+  if (m === "image/png") return "image/png";
+  if (m === "image/webp") return "image/webp";
+  if (m === "image/gif") return "image/gif";
   return "image/jpeg";
 }
 
@@ -66,23 +76,46 @@ const ARIN_TAG_SET = new Set([
   "Personal",
 ]);
 
-export async function extractTasksFromImage(params: {
+function sanitizeModelJson(parsed: unknown): unknown {
+  if (!parsed || typeof parsed !== "object") return parsed;
+  const obj = parsed as {
+    notes?: unknown;
+    tasks?: Array<Record<string, unknown>>;
+  };
+  if (typeof obj.notes === "string" && obj.notes.length > 800) {
+    obj.notes = obj.notes.slice(0, 800);
+  }
+  if (Array.isArray(obj.tasks)) {
+    obj.tasks = obj.tasks
+      .filter((t) => typeof t?.title === "string" && t.title.trim().length > 0)
+      .map((t) => ({
+        title: String(t.title).trim().slice(0, 300),
+        tags: Array.isArray(t.tags) ? t.tags : [],
+        isFrogCandidate: Boolean(t.isFrogCandidate),
+        firstFiveMinutes:
+          t.firstFiveMinutes == null ? null : String(t.firstFiveMinutes).slice(0, 300),
+        uncertain: Boolean(t.uncertain),
+        confidence:
+          typeof t.confidence === "number" ? t.confidence : undefined,
+      }));
+  }
+  return obj;
+}
+
+async function invokeOnce(params: {
   bytes: Buffer;
   mimeType: string;
-  role?: "arin" | "emon";
-}): Promise<{ result: ExtractResponse; provider: "bedrock"; modelId: string }> {
-  const role = params.role ?? "arin";
-  const modelId =
-    process.env.BEDROCK_MODEL_ID ?? "us.anthropic.claude-sonnet-4-6";
-
+  role: "arin" | "emon";
+  modelId: string;
+  aggressive: boolean;
+}): Promise<ExtractResponse> {
   const client = new BedrockRuntimeClient({});
   const base64 = params.bytes.toString("base64");
-
   const body = {
     anthropic_version: "bedrock-2023-05-31",
     max_tokens: 2048,
-    temperature: 0.2,
-    system: systemPromptFor(role),
+    temperature: params.aggressive ? 0.05 : 0.15,
+    system: systemPromptFor(params.role),
     messages: [
       {
         role: "user",
@@ -95,30 +128,27 @@ export async function extractTasksFromImage(params: {
               data: base64,
             },
           },
-          { type: "text", text: userTextFor(role) },
+          { type: "text", text: userTextFor(params.role, params.aggressive) },
         ],
       },
     ],
   };
 
-  const command = new InvokeModelCommand({
-    modelId,
-    contentType: "application/json",
-    accept: "application/json",
-    body: JSON.stringify(body),
-  });
-
-  const response = await client.send(command);
+  const response = await client.send(
+    new InvokeModelCommand({
+      modelId: params.modelId,
+      contentType: "application/json",
+      accept: "application/json",
+      body: JSON.stringify(body),
+    }),
+  );
   const raw = new TextDecoder().decode(response.body);
-  let parsedOuter: {
-    content?: Array<{ type?: string; text?: string }>;
-  };
+  let parsedOuter: { content?: Array<{ type?: string; text?: string }> };
   try {
     parsedOuter = JSON.parse(raw) as typeof parsedOuter;
   } catch {
     throw new Error("Bedrock response was not valid JSON");
   }
-
   const text = parsedOuter.content?.find((c) => c.type === "text")?.text;
   if (!text) throw new Error("Empty Bedrock vision response");
 
@@ -132,36 +162,58 @@ export async function extractTasksFromImage(params: {
   try {
     parsed = JSON.parse(cleaned);
   } catch {
-    throw new Error("Vision model did not return valid JSON");
-  }
-
-  // Model sometimes adds extra keys / long notes — sanitize before Zod
-  if (parsed && typeof parsed === "object") {
-    const obj = parsed as {
-      notes?: unknown;
-      tasks?: Array<Record<string, unknown>>;
-    };
-    if (typeof obj.notes === "string" && obj.notes.length > 800) {
-      obj.notes = obj.notes.slice(0, 800);
-    }
-    if (Array.isArray(obj.tasks)) {
-      obj.tasks = obj.tasks.map((t) => ({
-        title: t.title,
-        tags: t.tags,
-        isFrogCandidate: t.isFrogCandidate,
-        firstFiveMinutes: t.firstFiveMinutes,
-        uncertain: t.uncertain,
-        confidence: t.confidence,
-      }));
+    // Sometimes model wraps JSON in prose — pull first {...}
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      parsed = JSON.parse(cleaned.slice(start, end + 1));
+    } else {
+      throw new Error("Vision model did not return valid JSON");
     }
   }
 
-  const result = extractResponseSchema.parse(parsed);
-  const allowed = role === "emon" ? EMON_TAG_SET : ARIN_TAG_SET;
+  const result = extractResponseSchema.parse(sanitizeModelJson(parsed));
+  const allowed = params.role === "emon" ? EMON_TAG_SET : ARIN_TAG_SET;
   result.tasks = result.tasks.map((t) => ({
     ...t,
     tags: t.tags.filter((tag) => allowed.has(tag)),
   }));
+  return result;
+}
+
+export async function extractTasksFromImage(params: {
+  bytes: Buffer;
+  mimeType: string;
+  role?: "arin" | "emon";
+}): Promise<{ result: ExtractResponse; provider: "bedrock"; modelId: string }> {
+  const role = params.role ?? "arin";
+  const modelId =
+    process.env.BEDROCK_MODEL_ID ?? "us.anthropic.claude-sonnet-4-6";
+
+  let result = await invokeOnce({
+    ...params,
+    role,
+    modelId,
+    aggressive: false,
+  });
+
+  if (result.tasks.length === 0) {
+    console.warn("[extract] empty tasks — retrying with aggressive prompt");
+    result = await invokeOnce({
+      ...params,
+      role,
+      modelId,
+      aggressive: true,
+    });
+  }
+
+  console.info("[extract] ok", {
+    role,
+    modelId,
+    taskCount: result.tasks.length,
+    bytes: params.bytes.length,
+  });
+
   return { result, provider: "bedrock", modelId };
 }
 

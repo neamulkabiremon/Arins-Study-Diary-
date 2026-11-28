@@ -154,7 +154,11 @@ export function TomorrowView() {
     setFile(next);
   }
 
-  async function runExtract(sourceFile: File | null, preserveEdits: boolean) {
+  async function runExtract(
+    sourceFile: File | null,
+    preserveEdits: boolean,
+    fallbackFile?: File | null,
+  ) {
     setExtractError(null);
     setExtracting(true);
     setStatus(null);
@@ -186,7 +190,18 @@ export function TomorrowView() {
         }
         rememberFile(working);
 
-        const data = await apiExtract(working);
+        let data = await apiExtract(working);
+        const alt =
+          fallbackFile &&
+          fallbackFile !== working &&
+          fallbackFile.size > 0
+            ? fallbackFile
+            : null;
+        if (data.tasks.length === 0 && alt) {
+          setStatus("Retrying with fuller photo…");
+          data = await apiExtract(alt);
+          if (data.tasks.length > 0) rememberFile(alt);
+        }
         applyIncoming(
           data.tasks,
           preserveEdits,
@@ -195,7 +210,7 @@ export function TomorrowView() {
         );
         setStatus(
           data.tasks.length > 0
-            ? "✨ AI draft · Review each task, edit if needed, then Confirm plan."
+            ? `✨ AI found ${data.tasks.length} tasks · Review, edit if needed, then Confirm plan.`
             : "No tasks found in the photo. Add tasks manually or retry.",
         );
         return;
@@ -230,9 +245,11 @@ export function TomorrowView() {
 
     let working = f;
     let previewUrl = _preview;
+    let uncropped: File | null = null;
     try {
       // HEIC/HEIF → high-quality JPEG before crop / Bedrock
       working = await normalizeImageForAi(f);
+      uncropped = working;
       if (working !== f) {
         URL.revokeObjectURL(_preview);
         previewUrl = URL.createObjectURL(working);
@@ -291,7 +308,7 @@ export function TomorrowView() {
           );
         }
       }
-      await runExtract(working, false);
+      await runExtract(working, false, uncropped);
     } finally {
       window.clearInterval(id);
       setUploadProgress(null);
