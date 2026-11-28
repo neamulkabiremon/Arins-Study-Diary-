@@ -9,7 +9,13 @@ export type TaskTag =
   | "Personal";
 
 /** Arin study track vs Emon professional / life track */
-export const ARIN_TAGS: TaskTag[] = ["HSC", "Medical", "Engineering"];
+export const ARIN_TAGS: TaskTag[] = [
+  "HSC",
+  "Medical",
+  "Engineering",
+  "Language",
+  "Personal",
+];
 export const EMON_TAGS: TaskTag[] = [
   "Work",
   "Gym",
@@ -17,7 +23,16 @@ export const EMON_TAGS: TaskTag[] = [
   "Reading",
   "Personal",
 ];
-export const ALL_TASK_TAGS: TaskTag[] = [...ARIN_TAGS, ...EMON_TAGS];
+export const ALL_TASK_TAGS: TaskTag[] = [
+  "HSC",
+  "Medical",
+  "Engineering",
+  "Work",
+  "Gym",
+  "Language",
+  "Reading",
+  "Personal",
+];
 
 export type RewardChoice =
   | "date_with_emon"

@@ -24,15 +24,19 @@ Rules:
 - Optional firstFiveMinutes when obvious.`;
   }
 
-  return `You extract study tasks from a handwritten notebook photo for an HSC student preparing for medical and engineering admission exams.
+  return `You extract an editable daily checklist from a handwritten notebook / routine photo for Arin (HSC medical + engineering track).
 
 Rules:
-- Return ONLY valid JSON matching the schema. No markdown fences.
-- Support English, Bangla, or mixed handwriting.
-- Preserve chapters, question counts, subjects, time blocks.
-- tags: ONLY "HSC", "Medical", "Engineering" when they fit (Biology/Chemistry → Medical+HSC; Math/Physics → Engineering+HSC).
-- Mark at most one isFrogCandidate. Optional firstFiveMinutes when obvious.
-- Skip non-study items.`;
+- Return ONLY valid JSON. No markdown fences. No extra keys beyond the schema.
+- Support English, Bangla, French, or mixed handwriting.
+- Read the MAIN notepad / routine page in the foreground. Ignore dense formula sheets or printed pages underneath/behind it.
+- Turn each timed routine block into a task. Put times in the title (e.g. "6:30–9:00 Math", "10:00–11:30 Biology").
+- Include study blocks (Math, Physics, Chemistry, Biology, Language practice) AND important day blocks (NID paperwork, appointments) when written as timed plan items.
+- Skip pure wake-up / "getting ready" / sleep / decorative logos unless they are the only content.
+- tags: only "HSC", "Medical", "Engineering", "Language", "Personal" when they fit.
+  Biology/Chemistry → Medical+HSC. Math/Physics → Engineering+HSC. Language practise / French → Language (+ HSC ok). Errands/appointments → Personal.
+- Mark at most one isFrogCandidate (hardest study block, often Math/Physics before exams).
+- Optional firstFiveMinutes when obvious. Keep notes under 400 characters.`;
 }
 
 function userTextFor(role: "arin" | "emon"): string {
@@ -41,9 +45,9 @@ function userTextFor(role: "arin" | "emon"): string {
 {"tasks":[{"title":"...","tags":["Work"],"isFrogCandidate":false,"firstFiveMinutes":null,"uncertain":false,"confidence":0.0}],"notes":"..."}
 Use only Work / Gym / Language / Reading / Personal tags. Do not use HSC, Medical, or Engineering.`;
   }
-  return `Extract this study notebook as JSON:
-{"tasks":[{"title":"...","tags":["HSC"],"isFrogCandidate":false,"firstFiveMinutes":null,"uncertain":false,"confidence":0.0}],"notes":"..."}
-Use only HSC / Medical / Engineering tags.`;
+  return `Extract the handwritten routine on the main notepad as JSON:
+{"tasks":[{"title":"6:30–9:00 Math","tags":["HSC","Engineering"],"isFrogCandidate":true,"firstFiveMinutes":null,"uncertain":false,"confidence":0.0}],"notes":"..."}
+Include every timed plan line you can read on the foreground notebook. Ignore background worksheets. Tags only from HSC, Medical, Engineering, Language, Personal.`;
 }
 
 function mediaTypeFor(mime: string): "image/jpeg" | "image/png" | "image/webp" | "image/gif" {
@@ -54,7 +58,13 @@ function mediaTypeFor(mime: string): "image/jpeg" | "image/png" | "image/webp" |
 }
 
 const EMON_TAG_SET = new Set(["Work", "Gym", "Language", "Reading", "Personal"]);
-const ARIN_TAG_SET = new Set(["HSC", "Medical", "Engineering"]);
+const ARIN_TAG_SET = new Set([
+  "HSC",
+  "Medical",
+  "Engineering",
+  "Language",
+  "Personal",
+]);
 
 export async function extractTasksFromImage(params: {
   bytes: Buffer;
@@ -123,6 +133,27 @@ export async function extractTasksFromImage(params: {
     parsed = JSON.parse(cleaned);
   } catch {
     throw new Error("Vision model did not return valid JSON");
+  }
+
+  // Model sometimes adds extra keys / long notes — sanitize before Zod
+  if (parsed && typeof parsed === "object") {
+    const obj = parsed as {
+      notes?: unknown;
+      tasks?: Array<Record<string, unknown>>;
+    };
+    if (typeof obj.notes === "string" && obj.notes.length > 800) {
+      obj.notes = obj.notes.slice(0, 800);
+    }
+    if (Array.isArray(obj.tasks)) {
+      obj.tasks = obj.tasks.map((t) => ({
+        title: t.title,
+        tags: t.tags,
+        isFrogCandidate: t.isFrogCandidate,
+        firstFiveMinutes: t.firstFiveMinutes,
+        uncertain: t.uncertain,
+        confidence: t.confidence,
+      }));
+    }
   }
 
   const result = extractResponseSchema.parse(parsed);
